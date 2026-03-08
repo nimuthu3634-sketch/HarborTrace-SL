@@ -78,3 +78,45 @@ ul { padding-left: 1rem; }
 .about-page p,
 .about-page li { line-height: 1.55; }
 .cta-link { color: #0a5ea7; font-weight: 600; }
+
+select,
+textarea {
+  padding: .62rem .76rem;
+  border-radius: 8px;
+  border: 1px solid #cdd4dc;
+  font-size: .95rem;
+  font-family: inherit;
+}
+
+.secondary {
+  background: #fff;
+  color: #0c2f53;
+  border: 1px solid #c7d9eb;
+}
+
+.secondary.active {
+  background: #dceeff;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: .9rem 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e4ecf6;
+  text-align: left;
+  padding: .55rem;
+}

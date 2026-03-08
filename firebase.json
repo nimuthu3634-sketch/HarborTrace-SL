@@ -1,4 +1,5 @@
 {
+
   "functions": {
     "source": "functions"
   },
@@ -6,10 +7,12 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+
   "emulators": {
     "auth": {
       "port": 9099
     },
+
     "functions": {
       "port": 5001
     },
@@ -21,5 +24,24 @@
       "port": 4000
     },
     "singleProjectMode": true
+
+    "firestore": {
+      "port": 8080
+    },
+    "functions": {
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    }
+  },
+  "firestore": {
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
+
   }
 }

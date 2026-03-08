@@ -1,0 +1,31 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { PlaceholderPage } from '../../shared/components/PlaceholderPage';
+
+export function AppRouter() {
+  return (
+    <Routes>
+      <Route path="/login" element={<PlaceholderPage title="Login" />} />
+      <Route path="/register" element={<PlaceholderPage title="Register" />} />
+
+      <Route path="/dashboard" element={<PlaceholderPage title="Fisherman Dashboard" />} />
+      <Route path="/trips/new" element={<PlaceholderPage title="Register Departure" />} />
+      <Route path="/trips/active" element={<PlaceholderPage title="Active Voyage" />} />
+      <Route path="/landing/new" element={<PlaceholderPage title="Landing Intake" />} />
+      <Route path="/alerts/new" element={<PlaceholderPage title="Incident Alert" />} />
+
+      <Route path="/officer/dashboard" element={<PlaceholderPage title="Officer Dashboard" />} />
+      <Route path="/officer/trips" element={<PlaceholderPage title="Trip Monitoring" />} />
+      <Route path="/officer/landing" element={<PlaceholderPage title="Verification Queue" />} />
+      <Route path="/officer/notices" element={<PlaceholderPage title="Harbor Notice Manager" />} />
+
+      <Route path="/buyer/market" element={<PlaceholderPage title="Verified Landing Market" />} />
+      <Route path="/buyer/batches/:batchId" element={<PlaceholderPage title="Batch Traceability" />} />
+
+      <Route path="/admin/users" element={<PlaceholderPage title="User Management" />} />
+      <Route path="/admin/audit" element={<PlaceholderPage title="Audit Logs" />} />
+      <Route path="/admin/settings" element={<PlaceholderPage title="System Settings" />} />
+
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+}

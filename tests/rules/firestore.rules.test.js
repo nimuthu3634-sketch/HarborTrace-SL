@@ -147,6 +147,34 @@ describe('Firestore security rules', () => {
     await assertFails(updateDoc(doc(fisherDb, 'trips', 'tripProtected'), { vesselId: 'v9' }));
   });
 
+  it('prevents officer from reassigning trip ownership metadata', async () => {
+    await seedDoc('trips', 'tripOpsProtected', {
+      fishermanUid: 'fish1',
+      status: 'active',
+      createdByUid: 'fish1',
+      createdByRole: 'fisherman',
+      vesselId: 'v1',
+      departureHarborId: 'h1',
+      destinationZone: 'Z1',
+      crewCount: 4,
+      departureTime: new Date(),
+      expectedReturnTime: new Date(Date.now() + 60_000),
+      emergencyContact: '0771234567',
+      notes: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastStatusChangedAt: new Date()
+    });
+
+    const officerDb = testEnv.authenticatedContext('off1').firestore();
+    await assertFails(updateDoc(doc(officerDb, 'trips', 'tripOpsProtected'), { fishermanUid: 'fish2' }));
+    await assertSucceeds(updateDoc(doc(officerDb, 'trips', 'tripOpsProtected'), {
+      status: 'overdue',
+      updatedAt: new Date(),
+      lastStatusChangedAt: new Date()
+    }));
+  });
+
   it('allows fisherman to create landing only for themselves with pending verification defaults', async () => {
     const fisherDb = testEnv.authenticatedContext('fish1').firestore();
     const payload = {
@@ -291,6 +319,13 @@ describe('Firestore security rules', () => {
       statusUpdatedAt: new Date(),
       acknowledgedAt: new Date()
     }));
+
+    await assertFails(updateDoc(doc(officerDb, 'emergencyAlerts', 'a1'), {
+      status: 'resolved',
+      statusUpdatedByUid: 'admin1',
+      statusUpdatedAt: new Date(),
+      resolvedAt: new Date()
+    }));
   });
 
   it('enforces role-targeted notice reads and blocks client-side writes', async () => {
@@ -417,6 +452,27 @@ describe('Firestore security rules', () => {
   it('prevents client-side role escalation via users updates', async () => {
     const fisherDb = testEnv.authenticatedContext('fish1').firestore();
     await assertFails(updateDoc(doc(fisherDb, 'users', 'fish1'), { role: 'admin' }));
+  });
+
+  it('prevents client-side creation of elevated user roles', async () => {
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    const adminDb = testEnv.authenticatedContext('admin1').firestore();
+
+    await assertFails(setDoc(doc(fisherDb, 'users', 'fish1elevated'), {
+      uid: 'fish1elevated',
+      role: 'admin',
+      displayName: 'Escalation Attempt',
+      phone: '0700000000',
+      createdAt: new Date()
+    }));
+
+    await assertSucceeds(setDoc(doc(adminDb, 'users', 'off2'), {
+      uid: 'off2',
+      role: 'harbor_officer',
+      displayName: 'Officer 2',
+      phone: '0712345678',
+      createdAt: new Date()
+    }));
   });
 
   it('allows admin broad access while keeping audit logs write-protected', async () => {

@@ -39,21 +39,40 @@ service cloud.firestore {
       return request.resource.data[field] == resource.data[field];
     }
 
+    function isOpsOrAdmin() {
+      return isOfficer() || isAdmin();
+    }
+
     // ---- User profile + role controls (prevents client-side role escalation) ---------------
     match /users/{uid} {
+      function validUserRoleForClientCreate() {
+        // Elevated roles must be created via trusted server/admin paths.
+        return request.resource.data.role in ['fisherman', 'buyer'];
+      }
+
+      function userProfileSchemaValid() {
+        return hasOnlyKeys(['uid', 'role', 'displayName', 'phone', 'createdAt']);
+      }
+
       allow read: if signedIn() && (request.auth.uid == uid || isOfficer() || isAdmin());
 
-      allow create: if signedIn()
-                    && request.auth.uid == uid
-                    && request.resource.data.uid == uid
-                    && request.resource.data.role in ['fisherman', 'harbor_officer', 'buyer', 'admin']
-                    && hasOnlyKeys(['uid', 'role', 'displayName', 'phone', 'createdAt']);
+      allow create: if signedIn() && (
+        (request.auth.uid == uid
+          && request.resource.data.uid == uid
+          && validUserRoleForClientCreate()
+          && userProfileSchemaValid())
+        || (isAdmin()
+          && request.resource.data.uid == uid
+          && request.resource.data.role in ['fisherman', 'harbor_officer', 'buyer', 'admin']
+          && userProfileSchemaValid())
+      );
 
-      allow update: if signedIn() && (
+      allow update: if signedIn() && userProfileSchemaValid() && (
         // Users can edit their own profile fields, but never their identity/role fields.
         (request.auth.uid == uid
           && unchanged('uid')
-          && unchanged('role'))
+          && unchanged('role')
+          && unchanged('createdAt'))
         // Admin retains broad access, still with immutable uid guard.
         || (isAdmin() && unchanged('uid'))
       );
@@ -65,6 +84,13 @@ service cloud.firestore {
     match /trips/{tripId} {
       function validTripStatus(status) {
         return status in ['planned', 'active', 'completed', 'overdue', 'emergency'];
+      }
+
+      function tripIdentityFieldsUnchanged() {
+        return unchanged('fishermanUid')
+          && unchanged('createdByUid')
+          && unchanged('createdByRole')
+          && unchanged('createdAt');
       }
 
       allow read: if signedIn() && (
@@ -96,23 +122,21 @@ service cloud.firestore {
                       'lastStatusChangedAt'
                     ]);
 
-      allow update: if signedIn() && (
-        (isFisherman()
-          && resource.data.fishermanUid == request.auth.uid
-          && request.resource.data.fishermanUid == resource.data.fishermanUid
-          && request.resource.data.createdByUid == resource.data.createdByUid
-          && request.resource.data.createdByRole == resource.data.createdByRole
-          && unchanged('vesselId')
-          && unchanged('departureHarborId')
-          && unchanged('destinationZone')
-          && unchanged('crewCount')
-          && unchanged('departureTime')
-          && unchanged('expectedReturnTime')
-          && unchanged('emergencyContact')
-          && validTripStatus(request.resource.data.status))
-        || isOfficer()
-        || isAdmin()
-      );
+      allow update: if signedIn()
+                    && validTripStatus(request.resource.data.status)
+                    && tripIdentityFieldsUnchanged()
+                    && (
+                      (isFisherman()
+                        && resource.data.fishermanUid == request.auth.uid
+                        && unchanged('vesselId')
+                        && unchanged('departureHarborId')
+                        && unchanged('destinationZone')
+                        && unchanged('crewCount')
+                        && unchanged('departureTime')
+                        && unchanged('expectedReturnTime')
+                        && unchanged('emergencyContact'))
+                      || isOpsOrAdmin()
+                    );
 
       allow delete: if isAdmin();
     }
@@ -159,19 +183,37 @@ service cloud.firestore {
                       'updatedAt'
                     ]);
 
-      allow update: if signedIn() && (isOfficer() || isAdmin())
-                    && request.resource.data.fishermanUid == resource.data.fishermanUid
-                    && request.resource.data.activeTripId == resource.data.activeTripId
-                    && request.resource.data.alertType == resource.data.alertType
-                    && request.resource.data.incidentMessage == resource.data.incidentMessage
-                    && request.resource.data.lastKnownLocation == resource.data.lastKnownLocation
-                    && validAlertStatus(request.resource.data.status);
+      allow update: if signedIn() && isOpsOrAdmin()
+                    && unchanged('fishermanUid')
+                    && unchanged('activeTripId')
+                    && unchanged('alertType')
+                    && unchanged('incidentMessage')
+                    && unchanged('lastKnownLocation')
+                    && unchanged('createdAt')
+                    && validAlertStatus(request.resource.data.status)
+                    && request.resource.data.statusUpdatedByUid == request.auth.uid;
 
       allow delete: if isAdmin();
     }
 
     // ---- Landing submissions ----------------------------------------------------------------
     match /landings/{landingId} {
+      function verificationFieldsUnchanged() {
+        return unchanged('verificationStatus')
+          && unchanged('verifiedByOfficerUid')
+          && unchanged('verifiedAt')
+          && unchanged('verificationComments')
+          && unchanged('batchId')
+          && unchanged('batchCode')
+          && unchanged('batchVerificationUrl');
+      }
+
+      function landingIdentityFieldsUnchanged() {
+        return unchanged('fishermanUid')
+          && unchanged('submittedByUid')
+          && unchanged('createdAt');
+      }
+
       allow read: if signedIn() && (
         isAdmin()
         || isOfficer()
@@ -202,28 +244,13 @@ service cloud.firestore {
                       'updatedAt'
                     ]);
 
-      allow update: if signedIn() && (
-        // Fisherman may revise own submission, not protected verification fields.
+      allow update: if signedIn() && landingIdentityFieldsUnchanged() && (
+        // Fisherman may revise own submission, never verification/batch fields.
         (isFisherman()
           && resource.data.fishermanUid == request.auth.uid
-          && request.resource.data.fishermanUid == resource.data.fishermanUid
-          && request.resource.data.submittedByUid == resource.data.submittedByUid
-          && unchanged('verificationStatus')
-          && unchanged('verifiedByOfficerUid')
-          && unchanged('verifiedAt')
-          && unchanged('verificationComments')
-          && unchanged('batchId')
-          && unchanged('batchCode')
-          && unchanged('batchVerificationUrl'))
-        // Client-side verification state changes are blocked for all roles; use Cloud Functions.
-        || ((isOfficer() || isAdmin())
-          && unchanged('verificationStatus')
-          && unchanged('verifiedByOfficerUid')
-          && unchanged('verifiedAt')
-          && unchanged('verificationComments')
-          && unchanged('batchId')
-          && unchanged('batchCode')
-          && unchanged('batchVerificationUrl'))
+          && verificationFieldsUnchanged())
+        // Verification state changes are server-only (Cloud Functions/Admin SDK).
+        || (isOpsOrAdmin() && verificationFieldsUnchanged())
       );
 
       allow delete: if isAdmin();
@@ -235,9 +262,10 @@ service cloud.firestore {
         isAdmin()
         || isOfficer()
         || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+        || (isBuyer() && resource.data.buyerSafe == true)
       );
 
-      allow create, update: if isAdmin() || isOfficer();
+      allow create, update: if isOpsOrAdmin();
       allow delete: if isAdmin();
     }
 
@@ -246,12 +274,14 @@ service cloud.firestore {
         isAdmin()
         || isOfficer()
         || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+        || (isBuyer() && resource.data.buyerSafe == true)
       );
 
-      allow create, update: if isAdmin() || isOfficer();
+      allow create, update: if isOpsOrAdmin();
       allow delete: if isAdmin();
     }
 
+    // Public QR/verification endpoint collection (intentionally world-readable).
     match /batchPublicVerifications/{batchCode} {
       allow read: if true;
       allow write: if false;

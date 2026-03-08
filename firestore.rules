@@ -210,10 +210,18 @@ service cloud.firestore {
           && request.resource.data.submittedByUid == resource.data.submittedByUid
           && unchanged('verificationStatus')
           && unchanged('verifiedByOfficerUid')
-          && unchanged('verifiedAt'))
-        // Harbor officers/admin can run intake/verification workflows.
-        || isOfficer()
-        || isAdmin()
+          && unchanged('verifiedAt')
+          && unchanged('verificationComments')
+          && unchanged('batchId')
+          && unchanged('batchCode'))
+        // Client-side verification state changes are blocked for all roles; use Cloud Functions.
+        || ((isOfficer() || isAdmin())
+          && unchanged('verificationStatus')
+          && unchanged('verifiedByOfficerUid')
+          && unchanged('verifiedAt')
+          && unchanged('verificationComments')
+          && unchanged('batchId')
+          && unchanged('batchCode'))
       );
 
       allow delete: if isAdmin();

@@ -1,6 +1,6 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 const ALLOWED_FAILURE_CODES = new Set([
   'auth/invalid-credential',
@@ -49,7 +49,7 @@ export const logAuthAttempt = onCall(async (request: CallableRequest) => {
     await writeAuditLog({
       actorUid: request.auth.uid,
       actorRole: role,
-      action: 'auth.login.success',
+      action: AUDIT_ACTIONS.AUTH_LOGIN_SUCCESS,
       targetType: 'session',
       targetId: request.auth.uid,
       metadata: {
@@ -71,7 +71,7 @@ export const logAuthAttempt = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: 'anonymous',
     actorRole: 'anonymous',
-    action: 'auth.login.failed',
+    action: AUDIT_ACTIONS.AUTH_LOGIN_FAILED,
     targetType: 'session',
     targetId: email,
     metadata: {

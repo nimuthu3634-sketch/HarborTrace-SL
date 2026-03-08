@@ -1,6 +1,6 @@
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 function requiredText(value: unknown, fieldName: string, max = 200) {
   const parsed = String(value ?? '').trim();
@@ -57,7 +57,7 @@ export const createHarbor = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'harbor.created',
+    action: AUDIT_ACTIONS.HARBOR_CREATED,
     targetType: 'harbor',
     targetId: harborRef.id,
     metadata: {
@@ -95,7 +95,7 @@ export const updateHarbor = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'harbor.updated',
+    action: AUDIT_ACTIONS.HARBOR_UPDATED,
     targetType: 'harbor',
     targetId: harborId,
     metadata: {

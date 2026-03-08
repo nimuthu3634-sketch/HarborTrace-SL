@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ---- Common auth + role helpers ---------------------------------------------------------
     function signedIn() {
       return request.auth != null;
     }
@@ -30,75 +31,149 @@ service cloud.firestore {
       return userRole() == 'buyer';
     }
 
-    function canReadOperationalData() {
-      return isAdmin() || isOfficer() || isFisherman() || isBuyer();
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
     }
 
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    // ---- User profile + role controls (prevents client-side role escalation) ---------------
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAdmin() || isOfficer());
-      allow create: if signedIn() && request.auth.uid == uid
+      allow read: if signedIn() && (request.auth.uid == uid || isOfficer() || isAdmin());
+
+      allow create: if signedIn()
+                    && request.auth.uid == uid
+                    && request.resource.data.uid == uid
                     && request.resource.data.role in ['fisherman', 'harbor_officer', 'buyer', 'admin']
-                    && request.resource.data.uid == uid;
-      allow update: if signedIn()
-                    && (
-                      (request.auth.uid == uid && request.resource.data.role == resource.data.role)
-                      || isAdmin()
-                    );
+                    && hasOnlyKeys(['uid', 'role', 'displayName', 'phone', 'createdAt']);
+
+      allow update: if signedIn() && (
+        // Users can edit their own profile fields, but never their identity/role fields.
+        (request.auth.uid == uid
+          && unchanged('uid')
+          && unchanged('role'))
+        // Admin retains broad access, still with immutable uid guard.
+        || (isAdmin() && unchanged('uid'))
+      );
+
       allow delete: if isAdmin();
     }
 
+    // ---- Trip records -----------------------------------------------------------------------
     match /trips/{tripId} {
       allow read: if signedIn() && (
-        resource.data.fishermanUid == request.auth.uid || isAdmin() || isOfficer()
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
       );
+
       allow create: if isFisherman()
                     && request.resource.data.fishermanUid == request.auth.uid
                     && request.resource.data.status in ['active', 'returned', 'overdue'];
+
       allow update: if signedIn() && (
-        (resource.data.fishermanUid == request.auth.uid
-          && request.resource.data.fishermanUid == resource.data.fishermanUid)
-        || isAdmin() || isOfficer()
+        // Fisherman can update own trip, but cannot alter protected verification fields.
+        (isFisherman()
+          && resource.data.fishermanUid == request.auth.uid
+          && request.resource.data.fishermanUid == resource.data.fishermanUid
+          && unchanged('verificationStatus')
+          && unchanged('verifiedByOfficerUid')
+          && unchanged('verifiedAt'))
+        // Harbor officers/admin can perform workflow state transitions.
+        || isOfficer()
+        || isAdmin()
       );
+
       allow delete: if isAdmin();
     }
 
+    // ---- Incident alerts --------------------------------------------------------------------
     match /alerts/{alertId} {
       allow read: if signedIn() && (
-        resource.data.fishermanUid == request.auth.uid || isAdmin() || isOfficer()
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
       );
+
       allow create: if isFisherman() && request.resource.data.fishermanUid == request.auth.uid;
-      allow update: if isAdmin() || isOfficer();
+
+      allow update: if signedIn() && (
+        // Fisherman can update own alert details, but not verification/workflow fields.
+        (isFisherman()
+          && resource.data.fishermanUid == request.auth.uid
+          && request.resource.data.fishermanUid == resource.data.fishermanUid
+          && unchanged('verificationStatus')
+          && unchanged('resolvedByOfficerUid')
+          && unchanged('resolvedAt'))
+        || isOfficer()
+        || isAdmin()
+      );
+
       allow delete: if isAdmin();
     }
 
+    // ---- Landing submissions ----------------------------------------------------------------
     match /landings/{landingId} {
-      allow read: if canReadOperationalData();
-      allow create: if signedIn() && (isFisherman() || isOfficer() || isAdmin());
-      allow update: if signedIn() && (isOfficer() || isAdmin());
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+      );
+
+      allow create: if isFisherman()
+                    && request.resource.data.fishermanUid == request.auth.uid
+                    && request.resource.data.submissionStatus in ['draft', 'submitted'];
+
+      allow update: if signedIn() && (
+        // Fisherman may revise own submission, not protected verification fields.
+        (isFisherman()
+          && resource.data.fishermanUid == request.auth.uid
+          && request.resource.data.fishermanUid == resource.data.fishermanUid
+          && unchanged('verificationStatus')
+          && unchanged('verifiedByOfficerUid')
+          && unchanged('verifiedAt'))
+        // Harbor officers/admin can run intake/verification workflows.
+        || isOfficer()
+        || isAdmin()
+      );
+
       allow delete: if isAdmin();
     }
 
+    // ---- Batch traceability (buyer-safe reads only) -----------------------------------------
     match /batches/{batchId} {
-      allow read: if true;
-      allow create, update, delete: if false;
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+        || (isBuyer() && resource.data.buyerSafe == true)
+      );
+
+      allow create, update: if isAdmin() || isOfficer();
+      allow delete: if isAdmin();
     }
 
+    // ---- Operational/supporting collections -------------------------------------------------
     match /vessels/{vesselId} {
-      allow read: if canReadOperationalData();
-      allow create, update: if signedIn() && (isAdmin() || isOfficer() || isFisherman());
+      allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman());
+      allow create, update: if signedIn() && (isAdmin() || isOfficer());
       allow delete: if isAdmin();
     }
 
     match /harbors/{harborId} {
-      allow read: if true;
+      allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman() || isBuyer());
       allow create, update, delete: if isAdmin();
     }
 
     match /notices/{noticeId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin() || isOfficer();
+      allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman() || isBuyer());
+      allow create, update: if isAdmin() || isOfficer();
+      allow delete: if isAdmin();
     }
 
+    // ---- Admin-only analytics and immutable audit logs --------------------------------------
     match /auditLogs/{logId} {
       allow read: if isAdmin();
       allow write: if false;
@@ -107,6 +182,11 @@ service cloud.firestore {
     match /analytics/{docId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // ---- Explicit default deny ---------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

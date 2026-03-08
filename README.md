@@ -10,6 +10,7 @@ HarborTrace SL is a secure fisheries operations platform for Sri Lanka, covering
 - `firestore.indexes.json` Firestore composite indexes.
 - `firebase.json` Firebase project + emulator configuration.
 - `tests/rules/` Firestore security rules tests.
+- `tests/emulator/` end-to-end callable tests against the local Emulator Suite.
 
 ## Firebase setup
 
@@ -37,7 +38,15 @@ Required variables:
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_APP_ID`
 
-Optional values are included for Storage/Messaging, Functions region, and emulator ports/host.
+For local emulator development, set these in `web/.env.local` too:
+
+```bash
+VITE_USE_EMULATORS=true
+VITE_FIREBASE_EMULATOR_HOST=127.0.0.1
+VITE_FIREBASE_AUTH_EMULATOR_PORT=9099
+VITE_FIRESTORE_EMULATOR_PORT=8080
+VITE_FIREBASE_FUNCTIONS_EMULATOR_PORT=5001
+```
 
 > Do not commit `.env.local` or any real secrets.
 
@@ -50,35 +59,56 @@ firebase use harbortrace-sl-dev
 
 The default project alias is already set in `.firebaserc`.
 
-### 4) Run the frontend
+## Local Emulator Suite workflow (Auth + Firestore + Functions)
+
+### 1) Build Cloud Functions
+
+```bash
+npm run build:functions
+```
+
+### 2) Start emulators for local development
+
+```bash
+npm run dev:emulators
+```
+
+This starts:
+
+- Auth Emulator: `localhost:9099`
+- Firestore Emulator: `localhost:8080`
+- Functions Emulator: `localhost:5001`
+- Emulator UI: `localhost:4000`
+
+### 3) Run frontend against emulators (separate terminal)
 
 ```bash
 npm run dev:web
 ```
 
-### 5) Run Cloud Functions build (optional, for local iteration)
+### 4) Run all local tests against Emulator Suite
 
 ```bash
-npm --workspace functions run build
+npm run test:local
 ```
 
-## Emulator Suite (Auth + Firestore + Functions)
+This command runs:
 
-Start emulators from repository root:
+- `npm run test:web` (auth-protected route/page logic)
+- `npm run emulator:test`, which runs:
+  - `npm run test:rules` (Firestore security rules unit tests)
+  - `npm run test:functions:emulator` (callable emulator tests)
 
-```bash
-firebase emulators:start --only auth,firestore,functions
-```
+## Test coverage added for local Firebase testing
 
-Configured ports:
-
-- Auth: `localhost:9099`
-- Firestore: `localhost:8080`
-- Functions: `localhost:5001`
-- Emulator UI: `localhost:4000`
-
-When `VITE_USE_EMULATORS=true`, the frontend automatically connects to these local emulators.
-
+- Auth-protected route/page decisions (`web/src/app/protectedRouteAccess.test.js`).
+- Firestore rules access control by role and allowed/denied operations (`tests/rules/firestore.rules.test.js`).
+- Callable flow tests against emulators (`tests/emulator/callable.emulator.test.js`) covering:
+  - trip creation,
+  - SOS submission,
+  - landing submission,
+  - landing verification via Cloud Function,
+  - batch generation.
 
 ## Authentication flow (Firebase Auth + Firestore profile)
 
@@ -128,7 +158,12 @@ firebase deploy --only firestore:rules,firestore:indexes
 
 ## Validation commands
 
-- Rules tests (direct): `npm run test:rules`
-- Rules tests via emulator: `npm run emulator:test`
-- Frontend lint: `npm run lint:web`
-- Frontend build: `npm run build:web`
+- `npm run build:functions`
+- `npm run dev:emulators`
+- `npm run dev:web`
+- `npm run test:web`
+- `npm run test:rules`
+- `npm run test:functions:emulator`
+- `npm run test:local`
+- `npm run lint:web`
+- `npm run build:web`

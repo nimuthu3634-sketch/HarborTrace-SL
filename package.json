@@ -8,11 +8,18 @@
   ],
   "scripts": {
     "install:all": "npm install --workspaces",
+    "build:functions": "npm --workspace functions run build",
     "dev:web": "npm --workspace web run dev",
+    "dev:emulators": "npm run build:functions && firebase emulators:start --only auth,firestore,functions",
+    "dev:local": "npm run dev:emulators",
     "build:web": "npm --workspace web run build",
     "lint:web": "npm --workspace web run lint",
+    "test:web": "vitest run web/src/app/protectedRouteAccess.test.js",
     "test:rules": "vitest run tests/rules/firestore.rules.test.js",
-    "emulator:test": "firebase emulators:exec --only firestore \"npm run test:rules\""
+    "test:functions:emulator": "vitest run tests/emulator/callable.emulator.test.js",
+    "test:emulator": "npm run test:rules && npm run test:functions:emulator",
+    "test:local": "npm run test:web && npm run emulator:test",
+    "emulator:test": "npm run build:functions && firebase emulators:exec --only auth,firestore,functions \"npm run test:emulator\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.3",

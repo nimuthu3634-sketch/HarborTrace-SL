@@ -1,78 +1,50 @@
-# AGENTS.md
+# HarborTrace SL
 
-## Project name
-HarborTrace SL
+HarborTrace SL is a secure fisheries operations platform for Sri Lanka, covering departure registration, active voyage monitoring, incident alerts, landing intake verification, and end-to-end batch traceability.
 
-## Project summary
-HarborTrace SL is a secure fisheries operations platform for Sri Lanka.
-It supports fishermen, harbor officers, buyers, and administrators.
-The app manages trip registration, emergency alerts, catch/landing intake,
-landing verification, batch traceability, notices, and audit logging.
+## Monorepo structure
 
-## Stack
-- React + Vite frontend
-- Firebase Authentication
-- Cloud Firestore
-- Cloud Functions for Firebase
-- Firestore Security Rules
-- Firebase Local Emulator Suite
+- `frontend/` React + Vite application using feature-based modules.
+- `functions/` Cloud Functions for privileged workflows.
+- `firebase/` Firestore rules, indexes, and emulator tests.
+- `docs/firebase-architecture.md` detailed Firebase architecture and schema.
 
-## Business goals
-- Digitize fisheries workflows
-- Improve visibility of active and overdue trips
-- Improve fisher safety through incident alerts
-- Improve landing verification and traceability
-- Build a secure role-based system with auditability
+## Local development
 
-## User roles
-- fisherman
-- harbor_officer
-- buyer
-- admin
+### 1) Frontend
 
-## Domain wording
-Use practical fisheries terms:
-- Register Departure
-- Active Voyage
-- Landing Intake
-- Verification Status
-- Harbor Notice
-- Incident Alert
-- Batch Traceability
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Architecture rules
-- Keep frontend and backend separated clearly
-- Use feature-based folders
-- Keep UI components small and reusable
-- Put trusted write logic in Cloud Functions when needed
-- Keep Firestore document shapes consistent
-- Prefer readable code over clever code
+### 2) Functions
 
-## Firebase rules
-- Use Firebase Authentication for identity
-- Store app profile/role data in Firestore
-- Enforce access with Firestore Security Rules
-- Never use open Firestore rules in production
-- Test rules in Emulator Suite before finalizing
-- Use Cloud Functions for sensitive actions like verification and batch generation
+```bash
+cd functions
+npm install
+npm run build
+```
 
-## Security rules
-- Never store plain-text passwords
-- Use least privilege for all roles
-- Prevent role escalation from the client
-- Validate input both in frontend and trusted backend logic
-- Log security-sensitive actions into audit records
-- Do not expose internal errors directly to users
+### 3) Firebase Emulator Suite
 
-## UX rules
-- Mobile-first for fisherman screens
-- Tablet/desktop optimized dashboards for officer/admin
-- Clear badges and statuses
-- Friendly loading, empty, and error states
-- Professional UI suitable for a final-year project demo
+From repository root:
 
-## Code quality
-- Update README whenever setup changes
-- Add emulator-based tests for Firestore Rules
-- Add tests for core workflows
-- Do not leave critical TODO placeholders
+```bash
+firebase emulators:start
+```
+
+Configured emulators:
+- Auth: `localhost:9099`
+- Firestore: `localhost:8080`
+- Functions: `localhost:5001`
+- Emulator UI: `localhost:4000`
+
+## Security and architecture notes
+
+- Authentication is managed with Firebase Authentication.
+- User roles are stored in `users/{uid}` documents.
+- Sensitive write actions are intended for Cloud Functions.
+- Firestore rules follow deny-by-default and least-privilege patterns.
+- `auditLogs` are backend-only write targets.

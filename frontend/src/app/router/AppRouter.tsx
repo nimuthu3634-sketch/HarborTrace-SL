@@ -4,6 +4,7 @@ import { ActiveVoyagePage } from '../../features/fisherman/pages/ActiveVoyagePag
 import { FishermanDashboardPage } from '../../features/fisherman/pages/FishermanDashboardPage';
 import { NoticesPage } from '../../features/fisherman/pages/NoticesPage';
 import { TripHistoryPage } from '../../features/fisherman/pages/TripHistoryPage';
+import { FishermanManagementPage } from '../../features/fisherman-management/pages/FishermanManagementPage';
 
 export function AppRouter() {
   return (
@@ -20,6 +21,7 @@ export function AppRouter() {
       <Route path="/notices" element={<NoticesPage />} />
 
       <Route path="/officer/dashboard" element={<PlaceholderPage title="Officer Dashboard" />} />
+      <Route path="/officer/fishermen" element={<FishermanManagementPage />} />
       <Route path="/officer/trips" element={<PlaceholderPage title="Trip Monitoring" />} />
       <Route path="/officer/landing" element={<PlaceholderPage title="Verification Queue" />} />
       <Route path="/officer/notices" element={<PlaceholderPage title="Harbor Notice Manager" />} />
@@ -28,6 +30,7 @@ export function AppRouter() {
       <Route path="/buyer/batches/:batchId" element={<PlaceholderPage title="Batch Traceability" />} />
 
       <Route path="/admin/users" element={<PlaceholderPage title="User Management" />} />
+      <Route path="/admin/fishermen" element={<FishermanManagementPage />} />
       <Route path="/admin/audit" element={<PlaceholderPage title="Audit Logs" />} />
       <Route path="/admin/settings" element={<PlaceholderPage title="System Settings" />} />
 

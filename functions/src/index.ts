@@ -1,6 +1,6 @@
 import './config/firebaseAdmin';
 
-export { setUserRole } from './features/users';
+export { listFishermen, getFishermanDetail, createFisherman, updateFisherman } from './features/users';
 export { createTrip, transitionTripStatus, updateOverdueTripStatuses } from './features/trips';
 export { submitLandingIntake, verifyLandingIntake } from './features/landing';
 export { generateBatchCode } from './features/traceability';

@@ -21,6 +21,10 @@ import VoyageListPage from '../pages/VoyageListPage';
 import LandingDetailPage from '../pages/LandingDetailPage';
 import LandingIntakePage from '../pages/LandingIntakePage';
 import MyLandingsPage from '../pages/MyLandingsPage';
+import OfficerActiveTripsPage from '../pages/OfficerActiveTripsPage';
+import OfficerOverdueTripsPage from '../pages/OfficerOverdueTripsPage';
+import OfficerPendingAlertsPage from '../pages/OfficerPendingAlertsPage';
+import OfficerPendingLandingsPage from '../pages/OfficerPendingLandingsPage';
 
 function AppRoutes() {
   return (
@@ -53,6 +57,10 @@ function AppRoutes() {
                 <Route path="/notices" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Harbor Operations Bulletins"><NoticesPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/vessels" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/harbors" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Port & Harbor Directory"><HarborsPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/officer/trips/active" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerActiveTripsPage /></ProtectedRoute>} />
+                <Route path="/officer/trips/overdue" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerOverdueTripsPage /></ProtectedRoute>} />
+                <Route path="/officer/alerts/pending" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerPendingAlertsPage /></ProtectedRoute>} />
+                <Route path="/officer/landings/pending-verification" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerPendingLandingsPage /></ProtectedRoute>} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/audit" element={<ProtectedRoute allowedRoles={['admin']}><FeaturePage title="Regulatory Audit Trail"><AuditPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute allowedRoles={['admin']}><FeaturePage title="Fisheries Performance Analytics"><AnalyticsPanel /></FeaturePage></ProtectedRoute>} />

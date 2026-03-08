@@ -1,4 +1,4 @@
-import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
@@ -43,58 +43,46 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (!role) {
+      return undefined;
+    }
+
+    const noticesQuery = role === 'harbor_officer' || role === 'admin'
+      ? query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(12))
+      : query(collection(db, 'notices'), where('targetRole', 'in', [role, 'all']), orderBy('createdAt', 'desc'), limit(12));
+
+    return onSnapshot(noticesQuery, (snapshot) => setNotices(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))));
+  }, [role]);
+
+  useEffect(() => {
     if (role !== 'harbor_officer' && role !== 'admin') {
+      setTrips([]);
+      setAlerts([]);
+      setLandings([]);
       return undefined;
     }
 
     const tripsQuery = query(collection(db, 'trips'), orderBy('createdAt', 'desc'), limit(120));
     const alertsQuery = query(collection(db, 'emergencyAlerts'), orderBy('createdAt', 'desc'), limit(120));
     const landingsQuery = query(collection(db, 'landings'), orderBy('createdAt', 'desc'), limit(120));
-    const noticesQuery = query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(12));
 
-    const unsubTrips = onSnapshot(tripsQuery, (snapshot) => setTrips(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))));
-    const unsubAlerts = onSnapshot(alertsQuery, (snapshot) => setAlerts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))));
-    const unsubLandings = onSnapshot(landingsQuery, (snapshot) => setLandings(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))));
-    const unsubNotices = onSnapshot(noticesQuery, (snapshot) => setNotices(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))));
+    const unsubTrips = onSnapshot(tripsQuery, (snapshot) => setTrips(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))));
+    const unsubAlerts = onSnapshot(alertsQuery, (snapshot) => setAlerts(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))));
+    const unsubLandings = onSnapshot(landingsQuery, (snapshot) => setLandings(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))));
 
     return () => {
       unsubTrips();
       unsubAlerts();
       unsubLandings();
-      unsubNotices();
     };
   }, [role]);
 
-  const activeVoyages = useMemo(
-    () => trips.filter((trip) => resolveVoyageStatus(trip) === 'active'),
-    [trips]
-  );
-
-  const overdueVoyages = useMemo(
-    () => trips.filter((trip) => resolveVoyageStatus(trip) === 'overdue'),
-    [trips]
-  );
-
-  const pendingAlerts = useMemo(
-    () => alerts.filter((alert) => String(alert.status || 'pending') === 'pending'),
-    [alerts]
-  );
-
-  const pendingLandingVerification = useMemo(
-    () => landings.filter((landing) => String(landing.verificationStatus || 'pending') === 'pending'),
-    [landings]
-  );
-
-  const recentLandings = useMemo(
-    () => [...landings].sort((left, right) => (right.createdAt?.toMillis?.() || 0) - (left.createdAt?.toMillis?.() || 0)).slice(0, 6),
-    [landings]
-  );
-
-  const recentNotices = useMemo(
-    () => [...notices].sort((left, right) => noticeTimestamp(right) - noticeTimestamp(left)).slice(0, 6),
-    [notices]
-  );
-
+  const activeVoyages = useMemo(() => trips.filter((trip) => resolveVoyageStatus(trip) === 'active'), [trips]);
+  const overdueVoyages = useMemo(() => trips.filter((trip) => resolveVoyageStatus(trip) === 'overdue'), [trips]);
+  const pendingAlerts = useMemo(() => alerts.filter((alert) => String(alert.status || 'pending') === 'pending'), [alerts]);
+  const pendingLandingVerification = useMemo(() => landings.filter((landing) => String(landing.verificationStatus || 'pending') === 'pending'), [landings]);
+  const recentLandings = useMemo(() => [...landings].sort((left, right) => (right.createdAt?.toMillis?.() || 0) - (left.createdAt?.toMillis?.() || 0)).slice(0, 6), [landings]);
+  const recentNotices = useMemo(() => [...notices].sort((left, right) => noticeTimestamp(right) - noticeTimestamp(left)).slice(0, 6), [notices]);
   const urgentAlert = pendingAlerts.slice().sort((left, right) => alertTimestamp(right) - alertTimestamp(left))[0];
 
   if (role !== 'harbor_officer' && role !== 'admin') {
@@ -108,6 +96,22 @@ export default function DashboardPage() {
             Start with the <Link to="/batches">Buyer Batch Verification</Link> page to search by batch code and review buyer-safe traceability details.
           </p>
         )}
+
+        <div className="dashboard-alert-block">
+          <div className="officer-section-header">
+            <h3>Targeted notices</h3>
+            <Link to="/notices">View all notices</Link>
+          </div>
+          <ul className="officer-notice-list">
+            {recentNotices.map((notice) => (
+              <li key={notice.id}>
+                <strong><Link to={`/notices/${notice.id}`}>{notice.title || 'Untitled notice'}</Link></strong>
+                <span>{formatTimestamp(notice.createdAt)}</span>
+              </li>
+            ))}
+            {!recentNotices.length && <li>No notices targeted to your role right now.</li>}
+          </ul>
+        </div>
       </section>
     );
   }
@@ -178,7 +182,7 @@ export default function DashboardPage() {
           <ul className="officer-notice-list">
             {recentNotices.map((notice) => (
               <li key={notice.id}>
-                <strong>{notice.title || 'Untitled notice'}</strong>
+                <strong><Link to={`/notices/${notice.id}`}>{notice.title || 'Untitled notice'}</Link></strong>
                 <span>{formatTimestamp(notice.createdAt)}</span>
               </li>
             ))}

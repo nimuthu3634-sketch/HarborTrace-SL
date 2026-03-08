@@ -270,9 +270,18 @@ service cloud.firestore {
     }
 
     match /notices/{noticeId} {
-      allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman() || isBuyer());
-      allow create, update: if isAdmin() || isOfficer();
-      allow delete: if isAdmin();
+      function noticeVisibleToCaller() {
+        return resource.data.targetRole == 'all' || resource.data.targetRole == userRole();
+      }
+
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || noticeVisibleToCaller()
+      );
+
+      // Notice writes must flow through trusted server paths so audit logs are guaranteed.
+      allow create, update, delete: if false;
     }
 
     // ---- Admin-only analytics and immutable audit logs --------------------------------------

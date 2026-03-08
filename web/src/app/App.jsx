@@ -26,6 +26,7 @@ import OfficerActiveTripsPage from '../pages/OfficerActiveTripsPage';
 import OfficerOverdueTripsPage from '../pages/OfficerOverdueTripsPage';
 import OfficerPendingAlertsPage from '../pages/OfficerPendingAlertsPage';
 import OfficerPendingLandingsPage from '../pages/OfficerPendingLandingsPage';
+import NoticeDetailPage from '../pages/NoticeDetailPage';
 
 function AppRoutes() {
   return (
@@ -56,7 +57,8 @@ function AppRoutes() {
                 <Route path="/landings/:landingId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Landing Intake Detail"><LandingDetailPage /></FeaturePage></ProtectedRoute>} />
                 <Route path="/batches" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Catch Batch Traceability"><BatchesPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/batches/verify/:batchCode" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Batch Verification Details"><BuyerBatchDetailPage /></FeaturePage></ProtectedRoute>} />
-                <Route path="/notices" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Harbor Operations Bulletins"><NoticesPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/notices" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'buyer', 'admin']}><FeaturePage title="Harbor Operations Bulletins"><NoticesPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/notices/:noticeId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'buyer', 'admin']}><NoticeDetailPage /></ProtectedRoute>} />
                 <Route path="/vessels" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/harbors" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Port & Harbor Directory"><HarborsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/officer/trips/active" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerActiveTripsPage /></ProtectedRoute>} />

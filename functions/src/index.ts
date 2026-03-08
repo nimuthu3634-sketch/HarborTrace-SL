@@ -5,5 +5,5 @@ export { createTrip, transitionTripStatus, updateOverdueTripStatuses } from './f
 export { submitLandingIntake, verifyLandingIntake } from './features/landing';
 export { generateBatchCode } from './features/traceability';
 export { submitEmergencyAlert, updateEmergencyAlertStatus } from './features/alerts';
-export { publishHarborNotice } from './features/notices';
+export { createNotice, updateNotice } from './features/notices';
 export { getSessionProfile, logAuthAttempt } from './features/auth';

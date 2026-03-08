@@ -1,5 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PlaceholderPage } from '../../shared/components/PlaceholderPage';
+import { ActiveVoyagePage } from '../../features/fisherman/pages/ActiveVoyagePage';
+import { FishermanDashboardPage } from '../../features/fisherman/pages/FishermanDashboardPage';
+import { NoticesPage } from '../../features/fisherman/pages/NoticesPage';
+import { TripHistoryPage } from '../../features/fisherman/pages/TripHistoryPage';
 
 export function AppRouter() {
   return (
@@ -7,11 +11,13 @@ export function AppRouter() {
       <Route path="/login" element={<PlaceholderPage title="Login" />} />
       <Route path="/register" element={<PlaceholderPage title="Register" />} />
 
-      <Route path="/dashboard" element={<PlaceholderPage title="Fisherman Dashboard" />} />
+      <Route path="/dashboard" element={<FishermanDashboardPage />} />
       <Route path="/trips/new" element={<PlaceholderPage title="Register Departure" />} />
-      <Route path="/trips/active" element={<PlaceholderPage title="Active Voyage" />} />
+      <Route path="/trips/active" element={<ActiveVoyagePage />} />
+      <Route path="/trips/history" element={<TripHistoryPage />} />
       <Route path="/landing/new" element={<PlaceholderPage title="Landing Intake" />} />
       <Route path="/alerts/new" element={<PlaceholderPage title="Incident Alert" />} />
+      <Route path="/notices" element={<NoticesPage />} />
 
       <Route path="/officer/dashboard" element={<PlaceholderPage title="Officer Dashboard" />} />
       <Route path="/officer/trips" element={<PlaceholderPage title="Trip Monitoring" />} />

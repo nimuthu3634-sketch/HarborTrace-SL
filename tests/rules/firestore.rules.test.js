@@ -250,6 +250,7 @@ describe('Firestore security rules', () => {
       verificationComments: null,
       batchId: null,
       batchCode: null,
+      batchVerificationUrl: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -301,6 +302,21 @@ describe('Firestore security rules', () => {
     await assertSucceeds(getDoc(doc(buyerDb, 'batches', 'safeBatch')));
     await assertFails(getDoc(doc(buyerDb, 'batches', 'unsafeBatch')));
     await assertFails(updateDoc(doc(buyerDb, 'batches', 'safeBatch'), { lotCode: 'NEW' }));
+  });
+
+  it('allows public reads of batch verification docs and blocks writes', async () => {
+    await seedDoc('batchPublicVerifications', 'HTSL-ABC123', {
+      batchCode: 'HTSL-ABC123',
+      fishType: 'Tuna',
+      verificationStatus: 'verified'
+    });
+
+    const anonDb = testEnv.unauthenticatedContext().firestore();
+
+    await assertSucceeds(getDoc(doc(anonDb, 'batchPublicVerifications', 'HTSL-ABC123')));
+    await assertFails(setDoc(doc(anonDb, 'batchPublicVerifications', 'HTSL-NEW'), {
+      batchCode: 'HTSL-NEW'
+    }));
   });
 
   it('prevents client-side role escalation via users updates', async () => {

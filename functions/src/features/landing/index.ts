@@ -1,5 +1,6 @@
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
+import { randomBytes } from 'node:crypto';
 import { writeAuditLog } from '../../shared/utils/audit';
 
 type LandingPayload = {
@@ -102,7 +103,11 @@ export const submitLandingIntake = onCall(async (request: CallableRequest<Landin
 });
 
 function generateBatchCode() {
-  return `HTSL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  return `HTSL-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString('hex').toUpperCase()}`;
+}
+
+function getVerifyBaseUrl() {
+  return process.env.PUBLIC_VERIFY_BASE_URL || 'https://harbortrace-sl.web.app/verify';
 }
 
 export const verifyLandingIntake = onCall(async (request: CallableRequest<VerifyLandingPayload>) => {
@@ -154,35 +159,58 @@ export const verifyLandingIntake = onCall(async (request: CallableRequest<Verify
     });
 
     if (verificationStatus === 'verified') {
-      const newBatchRef = db.collection('batches').doc();
+      const newBatchRef = db.collection('fishBatches').doc();
       const newBatchCode = generateBatchCode();
+      const verifyUrl = `${getVerifyBaseUrl().replace(/\/$/, '')}/${encodeURIComponent(newBatchCode)}`;
+
+      const tripSnap = landingData.tripId ? await transaction.get(db.collection('trips').doc(String(landingData.tripId))) : null;
+      const harborSnap = landingData.landingHarborId
+        ? await transaction.get(db.collection('harbors').doc(String(landingData.landingHarborId)))
+        : null;
 
       batchId = newBatchRef.id;
       batchCode = newBatchCode;
 
       transaction.set(newBatchRef, {
         batchCode: newBatchCode,
+        qrValue: verifyUrl,
+        verificationUrl: verifyUrl,
         landingId,
-        tripId: landingData.tripId ?? null,
+        tripId: String(landingData.tripId ?? ''),
         fishType: landingData.fishType ?? null,
-        species: landingData.fishType ?? null,
-        quantity: Number(landingData.quantity ?? 0),
         totalWeightKg: Number(landingData.totalWeightKg ?? 0),
-        weightKg: Number(landingData.totalWeightKg ?? 0),
-        fishermanUid: landingData.fishermanUid ?? null,
-        harborId: landingData.landingHarborId ?? null,
-        buyerSafe: true,
+        vessel: String(tripSnap?.data()?.vesselId ?? 'Unknown vessel'),
+        landingHarbor: String(harborSnap?.data()?.harborName ?? landingData.landingHarborId ?? 'Unknown harbor'),
+        landingTime: landingData.landingTime ?? now,
+        storageMethod: String(landingData.storageMethod ?? 'unknown'),
+        freshnessStatus: String(landingData.conditionStatus ?? 'undetermined'),
+        buyerVisibleStatus: 'visible',
         verificationStatus: 'verified',
-        verifiedByOfficerUid: uid,
-        verifiedAt: now,
-        verificationComments: comments || null,
+        createdAt: now,
+        updatedAt: now
+      });
+
+      const publicBatchRef = db.collection('batchPublicVerifications').doc(newBatchCode);
+      transaction.set(publicBatchRef, {
+        batchCode: newBatchCode,
+        fishType: landingData.fishType ?? null,
+        vessel: String(tripSnap?.data()?.vesselId ?? 'Unknown vessel'),
+        landingHarbor: String(harborSnap?.data()?.harborName ?? landingData.landingHarborId ?? 'Unknown harbor'),
+        landingTime: landingData.landingTime ?? now,
+        storageMethod: String(landingData.storageMethod ?? 'unknown'),
+        freshnessStatus: String(landingData.conditionStatus ?? 'undetermined'),
+        verificationStatus: 'verified',
+        qrValue: verifyUrl,
+        verificationUrl: verifyUrl,
+        buyerVisibleStatus: 'visible',
         createdAt: now,
         updatedAt: now
       });
 
       transaction.update(landingRef, {
         batchId: newBatchRef.id,
-        batchCode: newBatchCode
+        batchCode: newBatchCode,
+        batchVerificationUrl: verifyUrl
       });
     }
   });

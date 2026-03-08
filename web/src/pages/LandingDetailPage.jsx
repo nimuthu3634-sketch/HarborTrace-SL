@@ -73,7 +73,20 @@ export default function LandingDetailPage() {
         <p><strong>Verified At:</strong> {landing.verifiedAt?.toDate ? landing.verifiedAt.toDate().toLocaleString() : '—'}</p>
         <p><strong>Verification Comments:</strong> {landing.verificationComments || '—'}</p>
         <p><strong>Generated Batch:</strong> {landing.batchCode || '—'}</p>
+        <p><strong>Batch Verification URL:</strong> {landing.batchVerificationUrl ? <a href={landing.batchVerificationUrl} target="_blank" rel="noreferrer">Open public verification page</a> : '—'}</p>
       </div>
+
+      {landing.batchCode && landing.batchVerificationUrl && (
+        <div style={{ marginTop: '1rem' }}>
+          <h3 style={{ marginBottom: '.45rem' }}>Traceability QR</h3>
+          <img
+            alt={`QR for batch ${landing.batchCode}`}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(landing.batchVerificationUrl)}`}
+            width="180"
+            height="180"
+          />
+        </div>
+      )}
 
       {canVerify && (
         <>

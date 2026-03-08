@@ -363,6 +363,31 @@ describe('Firestore security rules', () => {
     await assertFails(updateDoc(doc(officerDb, 'vessels', 'vessel1'), { status: 'inactive' }));
   });
 
+
+  it('blocks client-side harbor writes for all roles while allowing authenticated reads', async () => {
+    await seedDoc('harbors', 'harbor1', {
+      name: 'Colombo Harbor',
+      district: 'Colombo',
+      locationDescription: 'Main west coast harbor.'
+    });
+
+    const buyerDb = testEnv.authenticatedContext('buyer1').firestore();
+    const adminDb = testEnv.authenticatedContext('admin1').firestore();
+
+    await assertSucceeds(getDoc(doc(buyerDb, 'harbors', 'harbor1')));
+    await assertSucceeds(getDoc(doc(adminDb, 'harbors', 'harbor1')));
+
+    await assertFails(setDoc(doc(adminDb, 'harbors', 'harbor2'), {
+      name: 'Client Created Harbor',
+      district: 'Galle',
+      locationDescription: 'Should be blocked from client.'
+    }));
+
+    await assertFails(updateDoc(doc(adminDb, 'harbors', 'harbor1'), {
+      locationDescription: 'Edited on client'
+    }));
+  });
+
   it('allows buyer to read only buyerSafe batches', async () => {
     await seedDoc('batches', 'safeBatch', { buyerSafe: true, lotCode: 'LOT-1' });
     await seedDoc('batches', 'unsafeBatch', { buyerSafe: false, lotCode: 'LOT-2' });
@@ -402,6 +427,6 @@ describe('Firestore security rules', () => {
     const readResult = await getDoc(doc(adminDb, 'auditLogs', 'log1'));
     expect(readResult.exists()).toBe(true);
     await assertFails(setDoc(doc(adminDb, 'auditLogs', 'log2'), { action: 'tamper' }));
-    await assertSucceeds(setDoc(doc(adminDb, 'harbors', 'h1'), { name: 'Main Harbor' }));
+    await assertFails(setDoc(doc(adminDb, 'harbors', 'h1'), { name: 'Main Harbor' }));
   });
 });

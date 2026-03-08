@@ -9,3 +9,5 @@ export { createNotice, updateNotice } from './features/notices';
 export { getSessionProfile, logAuthAttempt } from './features/auth';
 
 export { createVessel, updateVessel } from './features/vessels';
+
+export { createHarbor, updateHarbor } from './features/harbors';

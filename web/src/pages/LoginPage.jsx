@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
@@ -8,6 +8,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    document.title = 'HarborTrace SL | Secure Sign In';
+  }, []);
+
   if (user) return <Navigate to="/" replace />;
 
   const onSubmit = async (event) => {
@@ -16,23 +20,23 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
     } catch {
-      setError('Unable to sign in. Please verify credentials.');
+      setError('Unable to sign in. Please verify your credentials and role access.');
     }
   };
 
   return (
     <section className="card narrow">
-      <h2>Login</h2>
+      <h2>HarborTrace SL Access</h2>
       <form onSubmit={onSubmit}>
         <label>
-          Email
+          Institutional Email
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
         </label>
         <label>
           Password
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
         </label>
-        <button type="submit">Sign in</button>
+        <button type="submit">Enter fisheries control center</button>
       </form>
       {error ? <p className="error">{error}</p> : null}
     </section>

@@ -26,10 +26,10 @@ export default function TripsPanel() {
 
   return (
     <>
-      <button onClick={registerDeparture}>Register Departure</button>
+      <button onClick={registerDeparture}>Register fishing voyage</button>
       <ul>
         {trips.slice(0, 8).map((trip) => (
-          <li key={trip.id}>{trip.id} - {trip.status}</li>
+          <li key={trip.id}>Voyage #{trip.id} - {trip.status}</li>
         ))}
       </ul>
     </>

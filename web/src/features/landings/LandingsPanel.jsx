@@ -28,12 +28,12 @@ export default function LandingsPanel() {
 
   return (
     <>
-      <button onClick={submitLanding}>Submit Landing Intake</button>
+      <button onClick={submitLanding}>Record landed catch intake</button>
       <ul>
         {landings.slice(0, 8).map((landing) => (
           <li key={landing.id}>
-            {landing.id} - {landing.status}
-            <button onClick={() => verifyLanding(landing.id)}>Verify</button>
+            Landing #{landing.id} - {landing.status}
+            <button onClick={() => verifyLanding(landing.id)}>Approve landing</button>
           </li>
         ))}
       </ul>

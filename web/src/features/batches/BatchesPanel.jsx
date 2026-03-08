@@ -23,7 +23,7 @@ export default function BatchesPanel() {
 
   return (
     <>
-      <button onClick={generateBatch}>Generate Fish Batch</button>
+      <button onClick={generateBatch}>Generate traceable catch batch</button>
       <ul>{batches.slice(0, 10).map((b) => <li key={b.id}>{b.batchCode} | {b.species} | {b.weightKg}kg</li>)}</ul>
     </>
   );

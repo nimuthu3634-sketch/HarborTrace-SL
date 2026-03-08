@@ -16,7 +16,7 @@ export default function AlertsPanel() {
     await addDoc(collection(db, 'alerts'), {
       fishermanUid: user.uid,
       severity: 'critical',
-      message: 'SOS - Assistance required',
+      message: 'Emergency at sea - Immediate support required',
       status: 'open',
       location: { lat: 6.93, lng: 79.85 },
       createdAt: serverTimestamp()
@@ -25,7 +25,7 @@ export default function AlertsPanel() {
 
   return (
     <>
-      <button onClick={sendSos}>Send Incident Alert</button>
+      <button onClick={sendSos}>Report maritime incident</button>
       <ul>{alerts.slice(0, 8).map((alert) => <li key={alert.id}>{alert.status} - {alert.message}</li>)}</ul>
     </>
   );

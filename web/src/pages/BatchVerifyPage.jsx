@@ -1,12 +1,16 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
 
 export default function BatchVerifyPage() {
   const [batchCode, setBatchCode] = useState('');
   const [result, setResult] = useState(null);
 
-  const verify = async (event) => {
+  useEffect(() => {
+    document.title = 'HarborTrace SL | Public Seafood Verification';
+  }, []);
+
+  const verifyBatch = async (event) => {
     event.preventDefault();
     const q = query(collection(db, 'batches'), where('batchCode', '==', batchCode));
     const snap = await getDocs(q);
@@ -15,12 +19,12 @@ export default function BatchVerifyPage() {
 
   return (
     <section className="card narrow">
-      <h2>Public Batch Verification</h2>
-      <form onSubmit={verify}>
-        <input value={batchCode} onChange={(e) => setBatchCode(e.target.value)} placeholder="Enter batch code" required />
-        <button type="submit">Verify</button>
+      <h2>Public Seafood Batch Verification</h2>
+      <form onSubmit={verifyBatch}>
+        <input value={batchCode} onChange={(e) => setBatchCode(e.target.value)} placeholder="Enter seafood batch code" required />
+        <button type="submit">Check traceability</button>
       </form>
-      {result ? <p>Verified: {result.species} - {result.weightKg}kg</p> : <p>No match yet.</p>}
+      {result ? <p>Verified Seafood Record: {result.species} - {result.weightKg}kg</p> : <p>No verified seafood batch found yet.</p>}
     </section>
   );
 }

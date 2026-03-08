@@ -1,15 +1,19 @@
 :root { font-family: Inter, system-ui, sans-serif; color-scheme: light; }
 * { box-sizing: border-box; }
-body { margin: 0; background: #f2f6fa; color: #123; }
+body { margin: 0; background: linear-gradient(180deg, #eef4fb 0%, #f8fbff 100%); color: #123; }
 .layout { max-width: 1100px; margin: 0 auto; padding: 1rem; }
-header { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+header { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+header h1 { margin: 0; color: #06335b; }
+header p { margin: 0; color: #335; }
 nav { display: flex; gap: .75rem; flex-wrap: wrap; margin: 1rem 0; }
-nav a { text-decoration: none; background: #fff; border-radius: 6px; padding: .4rem .7rem; color: #0c2f53; }
-.card { background: #fff; border-radius: 10px; padding: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
-.narrow { max-width: 420px; margin: 2rem auto; }
+nav a { text-decoration: none; background: #fff; border-radius: 999px; padding: .45rem .85rem; color: #0c2f53; border: 1px solid #d9e4f2; }
+.card { background: #fff; border-radius: 12px; padding: 1rem 1.1rem; box-shadow: 0 6px 20px rgba(8, 34, 62, .08); }
+.narrow { max-width: 460px; margin: 2rem auto; }
 form { display: grid; gap: .65rem; }
-input, button { padding: .55rem .7rem; border-radius: 6px; border: 1px solid #cdd4dc; }
-button { background: #0a5ea7; color: #fff; cursor: pointer; border: 0; }
+input, button { padding: .55rem .7rem; border-radius: 8px; border: 1px solid #cdd4dc; }
+button { background: #0a5ea7; color: #fff; cursor: pointer; border: 0; font-weight: 600; }
 ul { padding-left: 1rem; }
 .error { color: #b01414; }
 .state { padding: 2rem; text-align: center; }
+.about-page h3 { margin-top: 1.15rem; color: #0c2f53; }
+.about-page p, .about-page li { line-height: 1.55; }

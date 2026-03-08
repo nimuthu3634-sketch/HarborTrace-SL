@@ -1,23 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
+
+    // ---- Common auth + role helpers ---------------------------------------------------------
+    function signedIn() {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
     }
 
     function userRole() {
-      return isSignedIn() ? userDoc().data.role : null;
+      return signedIn() ? userDoc(request.auth.uid).data.role : null;
     }
 
     function isAdmin() {
       return userRole() == 'admin';
     }
 
-    function isHarborOfficer() {
+    function isOfficer() {
       return userRole() == 'harbor_officer';
     }
 
@@ -29,49 +31,302 @@ service cloud.firestore {
       return userRole() == 'buyer';
     }
 
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    function isOpsOrAdmin() {
+      return isOfficer() || isAdmin();
+    }
+
+    // ---- User profile + role controls (prevents client-side role escalation) ---------------
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
-      allow create: if isSignedIn() && request.auth.uid == uid;
-      allow update: if isSignedIn() && request.auth.uid == uid && request.resource.data.role == resource.data.role;
-      allow delete: if false;
+      function validUserRoleForClientCreate() {
+        // Elevated roles must be created via trusted server/admin paths.
+        return request.resource.data.role in ['fisherman', 'buyer'];
+      }
+
+      function userProfileSchemaValid() {
+        return hasOnlyKeys(['uid', 'role', 'displayName', 'phone', 'createdAt']);
+      }
+
+      allow read: if signedIn() && (request.auth.uid == uid || isOfficer() || isAdmin());
+
+      allow create: if signedIn() && (
+        (request.auth.uid == uid
+          && request.resource.data.uid == uid
+          && validUserRoleForClientCreate()
+          && userProfileSchemaValid())
+        || (isAdmin()
+          && request.resource.data.uid == uid
+          && request.resource.data.role in ['fisherman', 'harbor_officer', 'buyer', 'admin']
+          && userProfileSchemaValid())
+      );
+
+      allow update: if signedIn() && userProfileSchemaValid() && (
+        // Users can edit their own profile fields, but never their identity/role fields.
+        (request.auth.uid == uid
+          && unchanged('uid')
+          && unchanged('role')
+          && unchanged('createdAt'))
+        // Admin retains broad access, still with immutable uid guard.
+        || (isAdmin() && unchanged('uid'))
+      );
+
+      allow delete: if isAdmin();
     }
 
+    // ---- Trip records -----------------------------------------------------------------------
     match /trips/{tripId} {
-      allow read: if isSignedIn();
-      allow create: if isFisherman() && request.resource.data.fishermanId == request.auth.uid;
-      allow update: if isAdmin() || isHarborOfficer();
+      function validTripStatus(status) {
+        return status in ['planned', 'active', 'completed', 'overdue', 'emergency'];
+      }
+
+      function tripIdentityFieldsUnchanged() {
+        return unchanged('fishermanUid')
+          && unchanged('createdByUid')
+          && unchanged('createdByRole')
+          && unchanged('createdAt');
+      }
+
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+      );
+
+      allow create: if isFisherman()
+                    && request.resource.data.fishermanUid == request.auth.uid
+                    && request.resource.data.createdByUid == request.auth.uid
+                    && request.resource.data.createdByRole == 'fisherman'
+                    && validTripStatus(request.resource.data.status)
+                    && hasOnlyKeys([
+                      'vesselId',
+                      'departureHarborId',
+                      'destinationZone',
+                      'crewCount',
+                      'departureTime',
+                      'expectedReturnTime',
+                      'emergencyContact',
+                      'notes',
+                      'fishermanUid',
+                      'status',
+                      'createdByUid',
+                      'createdByRole',
+                      'createdAt',
+                      'updatedAt',
+                      'lastStatusChangedAt'
+                    ]);
+
+      allow update: if signedIn()
+                    && validTripStatus(request.resource.data.status)
+                    && tripIdentityFieldsUnchanged()
+                    && (
+                      (isFisherman()
+                        && resource.data.fishermanUid == request.auth.uid
+                        && unchanged('vesselId')
+                        && unchanged('departureHarborId')
+                        && unchanged('destinationZone')
+                        && unchanged('crewCount')
+                        && unchanged('departureTime')
+                        && unchanged('expectedReturnTime')
+                        && unchanged('emergencyContact'))
+                      || isOpsOrAdmin()
+                    );
+
       allow delete: if isAdmin();
     }
 
-    match /landingIntakes/{intakeId} {
-      allow read: if isSignedIn();
-      allow create: if isFisherman() && request.resource.data.fishermanId == request.auth.uid;
-      allow update: if isAdmin() || isHarborOfficer();
+    // ---- Incident alerts --------------------------------------------------------------------
+    match /emergencyAlerts/{alertId} {
+      function validAlertStatus(status) {
+        return status in ['pending', 'acknowledged', 'resolved'];
+      }
+
+      function activeTripOwnedByCaller(tripId) {
+        let trip = get(/databases/$(database)/documents/trips/$(tripId));
+        return trip.exists()
+               && trip.data.fishermanUid == request.auth.uid
+               && trip.data.status == 'active';
+      }
+
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+      );
+
+      allow create: if isFisherman()
+                    && request.resource.data.fishermanUid == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.statusUpdatedByUid == null
+                    && request.resource.data.statusUpdatedAt == null
+                    && request.resource.data.acknowledgedAt == null
+                    && request.resource.data.resolvedAt == null
+                    && activeTripOwnedByCaller(request.resource.data.activeTripId)
+                    && hasOnlyKeys([
+                      'fishermanUid',
+                      'activeTripId',
+                      'alertType',
+                      'incidentMessage',
+                      'lastKnownLocation',
+                      'status',
+                      'statusUpdatedByUid',
+                      'statusUpdatedAt',
+                      'acknowledgedAt',
+                      'resolvedAt',
+                      'createdAt',
+                      'updatedAt'
+                    ]);
+
+      allow update: if signedIn() && isOpsOrAdmin()
+                    && unchanged('fishermanUid')
+                    && unchanged('activeTripId')
+                    && unchanged('alertType')
+                    && unchanged('incidentMessage')
+                    && unchanged('lastKnownLocation')
+                    && unchanged('createdAt')
+                    && validAlertStatus(request.resource.data.status)
+                    && request.resource.data.statusUpdatedByUid == request.auth.uid;
+
       allow delete: if isAdmin();
     }
 
-    match /incidentAlerts/{alertId} {
-      allow read: if isSignedIn();
-      allow create: if isFisherman() && request.resource.data.fishermanId == request.auth.uid;
-      allow update: if isAdmin() || isHarborOfficer();
+    // ---- Landing submissions ----------------------------------------------------------------
+    match /landings/{landingId} {
+      function verificationFieldsUnchanged() {
+        return unchanged('verificationStatus')
+          && unchanged('verifiedByOfficerUid')
+          && unchanged('verifiedAt')
+          && unchanged('verificationComments')
+          && unchanged('batchId')
+          && unchanged('batchCode')
+          && unchanged('batchVerificationUrl');
+      }
+
+      function landingIdentityFieldsUnchanged() {
+        return unchanged('fishermanUid')
+          && unchanged('submittedByUid')
+          && unchanged('createdAt');
+      }
+
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+      );
+
+      allow create: if isFisherman()
+                    && request.resource.data.fishermanUid == request.auth.uid
+                    && request.resource.data.submittedByUid == request.auth.uid
+                    && request.resource.data.verificationStatus == 'pending'
+                    && request.resource.data.verifiedByOfficerUid == null
+                    && request.resource.data.verifiedAt == null
+                    && hasOnlyKeys([
+                      'tripId',
+                      'fishType',
+                      'quantity',
+                      'totalWeightKg',
+                      'storageMethod',
+                      'conditionStatus',
+                      'landingHarborId',
+                      'landingTime',
+                      'verificationStatus',
+                      'fishermanUid',
+                      'submittedByUid',
+                      'verifiedByOfficerUid',
+                      'verifiedAt',
+                      'createdAt',
+                      'updatedAt'
+                    ]);
+
+      allow update: if signedIn() && landingIdentityFieldsUnchanged() && (
+        // Fisherman may revise own submission, never verification/batch fields.
+        (isFisherman()
+          && resource.data.fishermanUid == request.auth.uid
+          && verificationFieldsUnchanged())
+        // Verification state changes are server-only (Cloud Functions/Admin SDK).
+        || (isOpsOrAdmin() && verificationFieldsUnchanged())
+      );
+
       allow delete: if isAdmin();
     }
 
+    // ---- Batch traceability (buyer-safe reads only) -----------------------------------------
     match /batches/{batchId} {
-      allow read: if isSignedIn() && (isBuyer() || isHarborOfficer() || isAdmin() || isFisherman());
-      allow create, update, delete: if isAdmin() || isHarborOfficer();
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+        || (isBuyer() && resource.data.buyerSafe == true)
+      );
+
+      allow create, update: if isOpsOrAdmin();
+      allow delete: if isAdmin();
     }
 
-    match /harborNotices/{noticeId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin() || isHarborOfficer();
+    match /fishBatches/{batchId} {
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+        || (isBuyer() && resource.data.buyerSafe == true)
+      );
+
+      allow create, update: if isOpsOrAdmin();
+      allow delete: if isAdmin();
     }
 
+    // Public QR/verification endpoint collection (intentionally world-readable).
+    match /batchPublicVerifications/{batchCode} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ---- Operational/supporting collections -------------------------------------------------
+    match /vessels/{vesselId} {
+      allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman());
+      // Vessel writes must flow through trusted server paths so duplicate checks and audit logs are enforced.
+      allow create, update, delete: if false;
+    }
+
+    match /harbors/{harborId} {
+      allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman() || isBuyer());
+      // Harbor writes must flow through trusted server paths so audit logs are guaranteed.
+      allow create, update, delete: if false;
+    }
+
+    match /notices/{noticeId} {
+      function noticeVisibleToCaller() {
+        return resource.data.targetRole == 'all' || resource.data.targetRole == userRole();
+      }
+
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || noticeVisibleToCaller()
+      );
+
+      // Notice writes must flow through trusted server paths so audit logs are guaranteed.
+      allow create, update, delete: if false;
+    }
+
+    // ---- Admin-only analytics and immutable audit logs --------------------------------------
     match /auditLogs/{logId} {
       allow read: if isAdmin();
       allow write: if false;
     }
 
+    match /analytics/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ---- Explicit default deny ---------------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }

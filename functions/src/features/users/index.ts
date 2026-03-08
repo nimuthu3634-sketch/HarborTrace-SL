@@ -1,8 +1,8 @@
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
-const ALLOWED_MANAGER_ROLES = new Set(['admin', 'harbor_officer']);
 const MAX_RESULTS = 100;
 
 function asText(value: unknown, fieldName: string, maxLength = 140, required = true) {
@@ -28,30 +28,6 @@ function asBoolean(value: unknown, fieldName: string) {
   }
 
   return value;
-}
-
-async function getCaller(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
-
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(request.auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('failed-precondition', 'No user profile found for signed-in account.');
-  }
-
-  const userData = userSnap.data() ?? {};
-  const role = String(userData.role ?? 'unassigned');
-  if (!ALLOWED_MANAGER_ROLES.has(role)) {
-    throw new HttpsError('permission-denied', 'Only harbor officers and admins can manage fishermen.');
-  }
-
-  return {
-    uid: request.auth.uid,
-    role,
-    homeHarborId: typeof userData.homeHarborId === 'string' ? userData.homeHarborId : null
-  };
 }
 
 function normalizeSearch(value: unknown) {
@@ -112,7 +88,7 @@ async function loadVesselsByOwner(ownerUid: string) {
 }
 
 export const listFishermen = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
+  const caller = await requireCaller(request, { allowedRoles: ['admin', 'harbor_officer'] });
   const search = normalizeSearch(request.data?.search);
   const harborFilter = normalizeSearch(request.data?.harborId);
   const statusFilter = normalizeSearch(request.data?.status);
@@ -148,7 +124,7 @@ export const listFishermen = onCall(async (request: CallableRequest) => {
 });
 
 export const getFishermanDetail = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
+  const caller = await requireCaller(request, { allowedRoles: ['admin', 'harbor_officer'] });
   const fishermanUid = asText(request.data?.fishermanUid, 'fishermanUid', 128);
 
   const db = getFirestore();
@@ -177,7 +153,7 @@ export const getFishermanDetail = onCall(async (request: CallableRequest) => {
 });
 
 export const createFisherman = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
+  const caller = await requireCaller(request, { allowedRoles: ['admin', 'harbor_officer'] });
   const uid = asText(request.data?.uid, 'uid', 128);
   const displayName = asText(request.data?.displayName, 'displayName', 140);
   const phoneNumber = asOptionalText(request.data?.phoneNumber, 40);
@@ -229,7 +205,7 @@ export const createFisherman = onCall(async (request: CallableRequest) => {
 });
 
 export const updateFisherman = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
+  const caller = await requireCaller(request, { allowedRoles: ['admin', 'harbor_officer'] });
   const fishermanUid = asText(request.data?.fishermanUid, 'fishermanUid', 128);
 
   if (request.data?.role !== undefined && request.data.role !== 'fisherman') {

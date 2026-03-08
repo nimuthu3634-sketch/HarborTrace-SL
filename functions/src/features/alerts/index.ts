@@ -1,6 +1,7 @@
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
 const ALERT_STATUSES = new Set(['pending', 'acknowledged', 'resolved']);
 
@@ -12,28 +13,8 @@ function asString(value: unknown, fieldName: string) {
   return parsed;
 }
 
-async function getCallerRole(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
-
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(request.auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('failed-precondition', 'No user profile found for signed-in account.');
-  }
-
-  return {
-    uid: request.auth.uid,
-    role: String(userSnap.data()?.role ?? 'unassigned')
-  };
-}
-
 export const submitEmergencyAlert = onCall(async (request: CallableRequest) => {
-  const caller = await getCallerRole(request);
-  if (caller.role !== 'fisherman') {
-    throw new HttpsError('permission-denied', 'Only fishermen can submit emergency alerts.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['fisherman'] });
 
   const fishermanUid = asString(request.data?.fishermanUid, 'fishermanUid');
   if (fishermanUid !== caller.uid) {
@@ -90,11 +71,7 @@ export const submitEmergencyAlert = onCall(async (request: CallableRequest) => {
 });
 
 export const updateEmergencyAlertStatus = onCall(async (request: CallableRequest) => {
-  const caller = await getCallerRole(request);
-  const isOfficerOrAdmin = caller.role === 'harbor_officer' || caller.role === 'admin';
-  if (!isOfficerOrAdmin) {
-    throw new HttpsError('permission-denied', 'Only harbor officers or admins can update alert statuses.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['harbor_officer', 'admin'] });
 
   const alertId = asString(request.data?.alertId, 'alertId');
   const nextStatus = asString(request.data?.status, 'status');
@@ -110,6 +87,18 @@ export const updateEmergencyAlertStatus = onCall(async (request: CallableRequest
   }
 
   const currentStatus = String(alertSnap.data()?.status ?? 'pending');
+  const alertData = alertSnap.data() ?? {};
+  if (caller.role === 'harbor_officer' && caller.homeHarborId) {
+    const tripId = String(alertData.activeTripId ?? '');
+    if (tripId) {
+      const tripSnap = await db.collection('trips').doc(tripId).get();
+      const tripHarborId = String(tripSnap.data()?.departureHarborId ?? '');
+      if (tripHarborId && tripHarborId !== caller.homeHarborId) {
+        throw new HttpsError('permission-denied', 'Harbor officers can only update alerts from their own harbor.');
+      }
+    }
+  }
+
   if (currentStatus === nextStatus) {
     return { alertId, status: currentStatus, unchanged: true };
   }

@@ -1,8 +1,8 @@
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
-const ALLOWED_MANAGER_ROLES = new Set(['harbor_officer', 'admin']);
 const ALLOWED_VESSEL_STATUSES = new Set(['active', 'inactive', 'maintenance']);
 
 function requiredText(value: unknown, fieldName: string, max = 200) {
@@ -27,22 +27,6 @@ function requiredPositiveNumber(value: unknown, fieldName: string) {
   return parsed;
 }
 
-async function getCaller(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
-
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(request.auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('failed-precondition', 'No user profile found for signed-in account.');
-  }
-
-  return {
-    uid: request.auth.uid,
-    role: String(userSnap.data()?.role ?? 'unassigned')
-  };
-}
 
 function normalizeRegistrationNumber(input: string) {
   return input.replace(/\s+/g, '').toUpperCase();
@@ -62,10 +46,7 @@ async function assertUniqueRegistration(registrationNumber: string, currentVesse
 }
 
 export const createVessel = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
-  if (!ALLOWED_MANAGER_ROLES.has(caller.role)) {
-    throw new HttpsError('permission-denied', 'Only harbor officers and admins can create vessels.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['harbor_officer', 'admin'] });
 
   const vesselName = requiredText(request.data?.vesselName, 'vesselName', 140);
   const registrationNumber = requiredText(request.data?.registrationNumber, 'registrationNumber', 50);
@@ -114,10 +95,7 @@ export const createVessel = onCall(async (request: CallableRequest) => {
 });
 
 export const updateVessel = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
-  if (!ALLOWED_MANAGER_ROLES.has(caller.role)) {
-    throw new HttpsError('permission-denied', 'Only harbor officers and admins can update vessels.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['harbor_officer', 'admin'] });
 
   const vesselId = requiredText(request.data?.vesselId, 'vesselId', 128);
   const vesselName = requiredText(request.data?.vesselName, 'vesselName', 140);

@@ -1,6 +1,7 @@
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
 function requiredText(value: unknown, fieldName: string, max = 200) {
   const parsed = String(value ?? '').trim();
@@ -15,30 +16,8 @@ function requiredText(value: unknown, fieldName: string, max = 200) {
   return parsed;
 }
 
-async function getCaller(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
-
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(request.auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('failed-precondition', 'No user profile found for signed-in account.');
-  }
-
-  const role = String(userSnap.data()?.role ?? 'unassigned');
-  if (role !== 'admin') {
-    throw new HttpsError('permission-denied', 'Only admins can manage harbors.');
-  }
-
-  return {
-    uid: request.auth.uid,
-    role
-  };
-}
-
 export const createHarbor = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
+  const caller = await requireCaller(request, { allowedRoles: ['admin'] });
   const name = requiredText(request.data?.name, 'name', 140);
   const district = requiredText(request.data?.district, 'district', 80);
   const locationDescription = requiredText(request.data?.locationDescription, 'locationDescription', 300);
@@ -71,7 +50,7 @@ export const createHarbor = onCall(async (request: CallableRequest) => {
 });
 
 export const updateHarbor = onCall(async (request: CallableRequest) => {
-  const caller = await getCaller(request);
+  const caller = await requireCaller(request, { allowedRoles: ['admin'] });
   const harborId = requiredText(request.data?.harborId, 'harborId', 128);
   const name = requiredText(request.data?.name, 'name', 140);
   const district = requiredText(request.data?.district, 'district', 80);

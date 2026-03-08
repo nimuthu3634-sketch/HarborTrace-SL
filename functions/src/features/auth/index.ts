@@ -1,6 +1,7 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
 const ALLOWED_FAILURE_CODES = new Set([
   'auth/invalid-credential',
@@ -13,23 +14,18 @@ const ALLOWED_FAILURE_CODES = new Set([
 ]);
 
 export const getSessionProfile = onCall(async (request: CallableRequest) => {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
+  const caller = await requireCaller(request);
 
   const db = getFirestore();
-  const profileSnap = await db.collection('users').doc(request.auth.uid).get();
+  const profileSnap = await db.collection('users').doc(caller.uid).get();
+  const profile = profileSnap.data() ?? {};
 
-  if (!profileSnap.exists) {
-    throw new HttpsError('failed-precondition', 'Profile record is missing for this account.');
-  }
-
-  const profile = profileSnap.data();
   return {
-    uid: request.auth.uid,
-    role: profile?.role ?? null,
-    displayName: profile?.displayName ?? null,
-    harborId: profile?.harborId ?? null
+    uid: caller.uid,
+    role: profile.role ?? null,
+    displayName: profile.displayName ?? null,
+    harborId: profile.harborId ?? profile.homeHarborId ?? null,
+    homeHarborId: profile.homeHarborId ?? null
   };
 });
 
@@ -64,8 +60,8 @@ export const logAuthAttempt = onCall(async (request: CallableRequest) => {
   const email = String(request.data?.email ?? '').trim().toLowerCase();
   const failureCode = String(request.data?.code ?? 'unknown').trim();
 
-  if (!email) {
-    throw new HttpsError('invalid-argument', 'Email is required for failed login events.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    throw new HttpsError('invalid-argument', 'A valid email is required for failed login events.');
   }
 
   await writeAuditLog({

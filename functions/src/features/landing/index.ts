@@ -2,6 +2,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { randomBytes } from 'node:crypto';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
 type LandingPayload = {
   tripId: string;
@@ -20,64 +21,69 @@ type VerifyLandingPayload = {
   comments?: string;
 };
 
-function requireAuth(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
+function asText(value: unknown, fieldName: string, max = 200) {
+  const parsed = String(value ?? '').trim();
+  if (!parsed) {
+    throw new HttpsError('invalid-argument', `${fieldName} is required.`);
   }
-  return request.auth.uid;
+  if (parsed.length > max) {
+    throw new HttpsError('invalid-argument', `${fieldName} exceeds allowed length.`);
+  }
+  return parsed;
 }
 
-async function getRole(uid: string) {
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(uid).get();
-  return userSnap.exists ? String(userSnap.data()?.role ?? 'unassigned') : 'unassigned';
+function asPositiveNumber(value: unknown, fieldName: string) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new HttpsError('invalid-argument', `${fieldName} must be a positive number.`);
+  }
+  return parsed;
+}
+
+function asDate(value: unknown, fieldName: string) {
+  const parsed = new Date(String(value ?? ''));
+  if (Number.isNaN(parsed.getTime())) {
+    throw new HttpsError('invalid-argument', `${fieldName} must be a valid date.`);
+  }
+  return parsed;
 }
 
 export const submitLandingIntake = onCall(async (request: CallableRequest<LandingPayload>) => {
-  const uid = requireAuth(request);
+  const caller = await requireCaller(request, { allowedRoles: ['fisherman'] });
   const db = getFirestore();
-  const role = await getRole(uid);
 
-  if (role !== 'fisherman') {
-    throw new HttpsError('permission-denied', 'Only fishermen can submit landing intake records.');
-  }
+  const tripId = asText(request.data?.tripId, 'tripId', 128);
+  const fishType = asText(request.data?.fishType, 'fishType', 120);
+  const storageMethod = asText(request.data?.storageMethod, 'storageMethod', 80);
+  const conditionStatus = asText(request.data?.conditionStatus, 'conditionStatus', 80);
+  const landingHarborId = asText(request.data?.landingHarborId, 'landingHarborId', 128);
+  const landingTime = asDate(request.data?.landingTime, 'landingTime');
+  const quantity = asPositiveNumber(request.data?.quantity, 'quantity');
+  const totalWeightKg = asPositiveNumber(request.data?.totalWeightKg, 'totalWeightKg');
 
-  const payload = request.data;
-  const requiredFields: Array<keyof LandingPayload> = [
-    'tripId',
-    'fishType',
-    'quantity',
-    'totalWeightKg',
-    'storageMethod',
-    'conditionStatus',
-    'landingHarborId',
-    'landingTime'
-  ];
-
-  for (const field of requiredFields) {
-    if (!payload?.[field]) {
-      throw new HttpsError('invalid-argument', `Missing required field: ${field}`);
-    }
-  }
-
-  const tripSnap = await db.collection('trips').doc(payload.tripId).get();
-  if (!tripSnap.exists || tripSnap.data()?.fishermanUid !== uid) {
+  const tripSnap = await db.collection('trips').doc(tripId).get();
+  if (!tripSnap.exists || tripSnap.data()?.fishermanUid !== caller.uid) {
     throw new HttpsError('permission-denied', 'Trip ownership validation failed for landing submission.');
+  }
+
+  const tripData = tripSnap.data() ?? {};
+  if (typeof tripData.departureHarborId === 'string' && tripData.departureHarborId !== landingHarborId) {
+    throw new HttpsError('permission-denied', 'Landing harbor must match the trip harbor.');
   }
 
   const now = Timestamp.now();
   const landingRef = await db.collection('landings').add({
-    tripId: payload.tripId,
-    fishType: String(payload.fishType).trim(),
-    quantity: Number(payload.quantity),
-    totalWeightKg: Number(payload.totalWeightKg),
-    storageMethod: String(payload.storageMethod).trim(),
-    conditionStatus: String(payload.conditionStatus).trim(),
-    landingHarborId: String(payload.landingHarborId).trim(),
-    landingTime: Timestamp.fromDate(new Date(payload.landingTime)),
+    tripId,
+    fishType,
+    quantity,
+    totalWeightKg,
+    storageMethod,
+    conditionStatus,
+    landingHarborId,
+    landingTime: Timestamp.fromDate(landingTime),
     verificationStatus: 'pending',
-    fishermanUid: uid,
-    submittedByUid: uid,
+    fishermanUid: caller.uid,
+    submittedByUid: caller.uid,
     verifiedByOfficerUid: null,
     verifiedAt: null,
     createdAt: now,
@@ -85,16 +91,16 @@ export const submitLandingIntake = onCall(async (request: CallableRequest<Landin
   });
 
   await writeAuditLog({
-    actorUid: uid,
-    actorRole: role,
+    actorUid: caller.uid,
+    actorRole: caller.role,
     action: AUDIT_ACTIONS.LANDING_SUBMITTED,
     targetType: 'landing',
     targetId: landingRef.id,
     metadata: {
-      tripId: payload.tripId,
-      fishType: payload.fishType,
-      quantity: Number(payload.quantity),
-      totalWeightKg: Number(payload.totalWeightKg),
+      tripId,
+      fishType,
+      quantity,
+      totalWeightKg,
       verificationStatus: 'pending'
     }
   });
@@ -111,19 +117,14 @@ function getVerifyBaseUrl() {
 }
 
 export const verifyLandingIntake = onCall(async (request: CallableRequest<VerifyLandingPayload>) => {
-  const uid = requireAuth(request);
-  const role = await getRole(uid);
+  const caller = await requireCaller(request, { allowedRoles: ['harbor_officer', 'admin'] });
 
-  if (!['harbor_officer', 'admin'].includes(role)) {
-    throw new HttpsError('permission-denied', 'Only harbor officers and admins can verify landings.');
-  }
-
-  const landingId = String(request.data?.landingId ?? '').trim();
+  const landingId = asText(request.data?.landingId, 'landingId', 128);
   const verificationStatus = request.data?.verificationStatus;
   const comments = String(request.data?.comments ?? '').trim();
 
-  if (!landingId || !['verified', 'rejected'].includes(String(verificationStatus))) {
-    throw new HttpsError('invalid-argument', 'landingId and a valid verificationStatus are required.');
+  if (!['verified', 'rejected'].includes(String(verificationStatus))) {
+    throw new HttpsError('invalid-argument', 'A valid verificationStatus is required.');
   }
 
   if (comments.length > 500) {
@@ -143,6 +144,14 @@ export const verifyLandingIntake = onCall(async (request: CallableRequest<Verify
     }
 
     const landingData = landingSnap.data() ?? {};
+    if (
+      caller.role === 'harbor_officer' &&
+      caller.homeHarborId &&
+      String(landingData.landingHarborId ?? '') !== caller.homeHarborId
+    ) {
+      throw new HttpsError('permission-denied', 'Harbor officers can only verify landings from their own harbor.');
+    }
+
     const existingStatus = String(landingData.verificationStatus ?? 'pending');
 
     if (existingStatus !== 'pending') {
@@ -152,7 +161,7 @@ export const verifyLandingIntake = onCall(async (request: CallableRequest<Verify
     const now = Timestamp.now();
     transaction.update(landingRef, {
       verificationStatus,
-      verifiedByOfficerUid: uid,
+      verifiedByOfficerUid: caller.uid,
       verifiedAt: now,
       verificationComments: comments || null,
       updatedAt: now
@@ -216,8 +225,8 @@ export const verifyLandingIntake = onCall(async (request: CallableRequest<Verify
   });
 
   await writeAuditLog({
-    actorUid: uid,
-    actorRole: role,
+    actorUid: caller.uid,
+    actorRole: caller.role,
     action: AUDIT_ACTIONS.LANDING_STATUS_CHANGED,
     targetType: 'landing',
     targetId: landingId,

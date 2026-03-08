@@ -79,6 +79,42 @@ Configured ports:
 
 When `VITE_USE_EMULATORS=true`, the frontend automatically connects to these local emulators.
 
+
+## Authentication flow (Firebase Auth + Firestore profile)
+
+HarborTrace SL uses Firebase Authentication for identity and Firestore for role/profile data.
+
+- Identity: users sign in with **email/password** via Firebase Auth.
+- Profile source of truth: role and profile metadata are stored in `users/{uid}` Firestore documents.
+- Trusted role resolution: the frontend requests session profile data through the `getSessionProfile` callable Cloud Function, which reads Firestore using Admin SDK (server-side).
+- Route protection: frontend routes are guarded by role-aware `ProtectedRoute` checks, and Firestore security rules still enforce backend authorization.
+- Auditability: login attempts are written to `auditLogs` through `logAuthAttempt` callable:
+  - `auth.login.success` when sign-in succeeds.
+  - `auth.login.failed` when sign-in fails.
+
+### Demo / seed users (presentation mode)
+
+For local emulator demos, create users in Firebase Auth emulator and add matching role profiles in Firestore (`users/{uid}`).
+
+Suggested demo accounts:
+
+- `fisherman.demo@harbortrace.lk` → role `fisherman`
+- `officer.demo@harbortrace.lk` → role `harbor_officer`
+- `buyer.demo@harbortrace.lk` → role `buyer`
+- `admin.demo@harbortrace.lk` → role `admin`
+
+Each profile document should include at minimum:
+
+```json
+{
+  "uid": "<firebase-auth-uid>",
+  "role": "fisherman | harbor_officer | buyer | admin",
+  "displayName": "Demo User"
+}
+```
+
+> Note: role claims from the client UI must never be treated as authoritative. Always enforce role access in Firestore rules and callable/server functions.
+
 ## Firestore rules and indexes
 
 - Rules source: `firestore.rules`

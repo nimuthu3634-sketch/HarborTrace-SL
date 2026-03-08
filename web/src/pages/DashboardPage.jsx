@@ -9,7 +9,7 @@ const roleDescriptions = {
 };
 
 export default function DashboardPage() {
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
 
   useEffect(() => {
     document.title = 'HarborTrace SL | Fisheries Operations Dashboard';
@@ -18,7 +18,8 @@ export default function DashboardPage() {
   return (
     <section className="card">
       <h2>Fisheries Operations Dashboard</h2>
-      <p>{roleDescriptions[role] || 'No fisheries role assigned yet. Please contact the system administrator.'}</p>
+      <p>Welcome{profile?.displayName ? `, ${profile.displayName}` : ''}.</p>
+      <p>{roleDescriptions[role] || 'No fisheries role assigned yet. Please contact the system administrator to activate your account.'}</p>
     </section>
   );
 }

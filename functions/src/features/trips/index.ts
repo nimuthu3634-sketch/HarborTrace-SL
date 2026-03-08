@@ -2,15 +2,21 @@ import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 import { resolveTripStatus } from '../../shared/utils/tripStatus';
 
 const ALLOWED_STATUSES = new Set(['planned', 'active', 'completed', 'overdue', 'emergency']);
 
-function asString(value: unknown, fieldName: string) {
+function asString(value: unknown, fieldName: string, max = 200) {
   const parsed = String(value ?? '').trim();
   if (!parsed) {
     throw new HttpsError('invalid-argument', `${fieldName} is required.`);
   }
+
+  if (parsed.length > max) {
+    throw new HttpsError('invalid-argument', `${fieldName} exceeds allowed length.`);
+  }
+
   return parsed;
 }
 
@@ -30,30 +36,10 @@ function asDate(value: unknown, fieldName: string) {
   return parsed;
 }
 
-async function getCallerRole(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
-
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(request.auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('failed-precondition', 'No user profile found for signed-in account.');
-  }
-
-  return {
-    uid: request.auth.uid,
-    role: String(userSnap.data()?.role ?? 'unassigned')
-  };
-}
-
 export const createTrip = onCall(async (request: CallableRequest) => {
-  const caller = await getCallerRole(request);
-  if (caller.role !== 'fisherman') {
-    throw new HttpsError('permission-denied', 'Only fishermen can register departures.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['fisherman'] });
 
-  const fishermanUid = asString(request.data?.fishermanUid, 'fishermanUid');
+  const fishermanUid = asString(request.data?.fishermanUid, 'fishermanUid', 128);
   if (fishermanUid !== caller.uid) {
     throw new HttpsError('permission-denied', 'Fishermen can only create trips for themselves.');
   }
@@ -64,6 +50,31 @@ export const createTrip = onCall(async (request: CallableRequest) => {
     throw new HttpsError('invalid-argument', 'expectedReturnTime must be after departureTime.');
   }
 
+  const vesselId = asString(request.data?.vesselId, 'vesselId', 128);
+  const departureHarborId = asString(request.data?.departureHarborId, 'departureHarborId', 128);
+
+  const db = getFirestore();
+  const [vesselSnap, fishermanSnap] = await Promise.all([
+    db.collection('vessels').doc(vesselId).get(),
+    db.collection('users').doc(fishermanUid).get()
+  ]);
+
+  if (!vesselSnap.exists) {
+    throw new HttpsError('failed-precondition', 'Referenced vessel does not exist.');
+  }
+
+  const vessel = vesselSnap.data() ?? {};
+  const ownerUserId = String(vessel.ownerUserId ?? vessel.ownerUid ?? '');
+  if (ownerUserId !== fishermanUid) {
+    throw new HttpsError('permission-denied', 'You can only create trips with your own vessel.');
+  }
+
+  const fishermanData = fishermanSnap.data() ?? {};
+  const homeHarborId = typeof fishermanData.homeHarborId === 'string' ? fishermanData.homeHarborId : null;
+  if (homeHarborId && departureHarborId !== homeHarborId) {
+    throw new HttpsError('permission-denied', 'Departure harbor must match your assigned harbor.');
+  }
+
   const initialStatus = departureTime.getTime() > Date.now() ? 'planned' : 'active';
   const status = resolveTripStatus({
     status: initialStatus,
@@ -71,14 +82,14 @@ export const createTrip = onCall(async (request: CallableRequest) => {
   });
 
   const payload = {
-    vesselId: asString(request.data?.vesselId, 'vesselId'),
-    departureHarborId: asString(request.data?.departureHarborId, 'departureHarborId'),
-    destinationZone: asString(request.data?.destinationZone, 'destinationZone'),
+    vesselId,
+    departureHarborId,
+    destinationZone: asString(request.data?.destinationZone, 'destinationZone', 240),
     crewCount: asPositiveInt(request.data?.crewCount, 'crewCount'),
     departureTime: Timestamp.fromDate(departureTime),
     expectedReturnTime: Timestamp.fromDate(expectedReturnTime),
-    emergencyContact: asString(request.data?.emergencyContact, 'emergencyContact'),
-    notes: String(request.data?.notes ?? '').trim(),
+    emergencyContact: asString(request.data?.emergencyContact, 'emergencyContact', 180),
+    notes: String(request.data?.notes ?? '').trim().slice(0, 2000),
     fishermanUid,
     status,
     createdByUid: caller.uid,
@@ -88,7 +99,6 @@ export const createTrip = onCall(async (request: CallableRequest) => {
     lastStatusChangedAt: FieldValue.serverTimestamp()
   };
 
-  const db = getFirestore();
   const tripRef = await db.collection('trips').add(payload);
 
   await writeAuditLog({
@@ -99,8 +109,8 @@ export const createTrip = onCall(async (request: CallableRequest) => {
     targetId: tripRef.id,
     metadata: {
       status,
-      vesselId: payload.vesselId,
-      departureHarborId: payload.departureHarborId
+      vesselId,
+      departureHarborId
     }
   });
 
@@ -108,9 +118,9 @@ export const createTrip = onCall(async (request: CallableRequest) => {
 });
 
 export const transitionTripStatus = onCall(async (request: CallableRequest) => {
-  const caller = await getCallerRole(request);
-  const tripId = asString(request.data?.tripId, 'tripId');
-  const nextStatus = asString(request.data?.status, 'status');
+  const caller = await requireCaller(request);
+  const tripId = asString(request.data?.tripId, 'tripId', 128);
+  const nextStatus = asString(request.data?.status, 'status', 32);
 
   if (!ALLOWED_STATUSES.has(nextStatus)) {
     throw new HttpsError('invalid-argument', 'Unsupported trip status transition.');
@@ -123,12 +133,16 @@ export const transitionTripStatus = onCall(async (request: CallableRequest) => {
     throw new HttpsError('not-found', 'Trip does not exist.');
   }
 
-  const trip = tripSnap.data() as { fishermanUid?: string; status?: string; expectedReturnTime?: unknown };
+  const trip = tripSnap.data() as { fishermanUid?: string; status?: string; expectedReturnTime?: unknown; departureHarborId?: string };
   const isOwner = trip.fishermanUid === caller.uid;
   const isOfficerOrAdmin = caller.role === 'harbor_officer' || caller.role === 'admin';
 
   if (!isOfficerOrAdmin && !isOwner) {
     throw new HttpsError('permission-denied', 'You cannot update this trip.');
+  }
+
+  if (caller.role === 'harbor_officer' && caller.homeHarborId && trip.departureHarborId !== caller.homeHarborId) {
+    throw new HttpsError('permission-denied', 'Harbor officers can only update trips from their own harbor.');
   }
 
   if (isOwner && !isOfficerOrAdmin) {
@@ -154,19 +168,17 @@ export const transitionTripStatus = onCall(async (request: CallableRequest) => {
     lastStatusChangedAt: FieldValue.serverTimestamp()
   });
 
-  if (['active', 'completed', 'overdue', 'emergency'].includes(normalizedNextStatus)) {
-    await writeAuditLog({
-      actorUid: caller.uid,
-      actorRole: caller.role,
-      action: AUDIT_ACTIONS.TRIP_STATUS_CHANGED,
-      targetType: 'trip',
-      targetId: tripId,
-      metadata: {
-        previousStatus: currentStatus,
-        nextStatus: normalizedNextStatus
-      }
-    });
-  }
+  await writeAuditLog({
+    actorUid: caller.uid,
+    actorRole: caller.role,
+    action: AUDIT_ACTIONS.TRIP_STATUS_CHANGED,
+    targetType: 'trip',
+    targetId: tripId,
+    metadata: {
+      previousStatus: currentStatus,
+      nextStatus: normalizedNextStatus
+    }
+  });
 
   return { tripId, status: normalizedNextStatus };
 });

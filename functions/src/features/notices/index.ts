@@ -1,8 +1,8 @@
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
+import { requireCaller } from '../../shared/utils/caller';
 
-const ALLOWED_AUTHOR_ROLES = new Set(['harbor_officer', 'admin']);
 const ALLOWED_TARGET_ROLES = new Set(['fisherman', 'harbor_officer', 'buyer', 'admin', 'all']);
 const ALLOWED_SEVERITIES = new Set(['info', 'warning', 'critical']);
 
@@ -19,30 +19,8 @@ function asString(value: unknown, fieldName: string, max = 5000) {
   return parsed;
 }
 
-async function getCallerRole(request: CallableRequest) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'A signed-in session is required.');
-  }
-
-  const db = getFirestore();
-  const userSnap = await db.collection('users').doc(request.auth.uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('failed-precondition', 'No user profile found for signed-in account.');
-  }
-
-  const role = String(userSnap.data()?.role ?? 'unassigned');
-  return {
-    uid: request.auth.uid,
-    role,
-    displayName: String(userSnap.data()?.displayName ?? request.auth.uid)
-  };
-}
-
 export const createNotice = onCall(async (request: CallableRequest) => {
-  const caller = await getCallerRole(request);
-  if (!ALLOWED_AUTHOR_ROLES.has(caller.role)) {
-    throw new HttpsError('permission-denied', 'Only harbor officers and admins can create notices.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['harbor_officer', 'admin'] });
 
   const title = asString(request.data?.title, 'title', 140);
   const body = asString(request.data?.body, 'body', 5000);
@@ -64,7 +42,7 @@ export const createNotice = onCall(async (request: CallableRequest) => {
     severity,
     targetRole,
     createdBy: caller.uid,
-    createdByName: caller.displayName,
+    createdByName: caller.displayName ?? caller.uid,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp()
   };
@@ -88,10 +66,7 @@ export const createNotice = onCall(async (request: CallableRequest) => {
 });
 
 export const updateNotice = onCall(async (request: CallableRequest) => {
-  const caller = await getCallerRole(request);
-  if (!ALLOWED_AUTHOR_ROLES.has(caller.role)) {
-    throw new HttpsError('permission-denied', 'Only harbor officers and admins can update notices.');
-  }
+  const caller = await requireCaller(request, { allowedRoles: ['harbor_officer', 'admin'] });
 
   const noticeId = asString(request.data?.noticeId, 'noticeId', 128);
   const db = getFirestore();
@@ -100,6 +75,11 @@ export const updateNotice = onCall(async (request: CallableRequest) => {
 
   if (!noticeSnap.exists) {
     throw new HttpsError('not-found', 'Notice not found.');
+  }
+
+  const noticeData = noticeSnap.data() ?? {};
+  if (caller.role === 'harbor_officer' && String(noticeData.createdBy ?? '') !== caller.uid) {
+    throw new HttpsError('permission-denied', 'Harbor officers can only update notices they created.');
   }
 
   const nextTitle = request.data?.title === undefined ? undefined : asString(request.data?.title, 'title', 140);

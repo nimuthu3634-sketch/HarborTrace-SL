@@ -1,6 +1,6 @@
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 const ALLOWED_MANAGER_ROLES = new Set(['admin', 'harbor_officer']);
 const MAX_RESULTS = 100;
@@ -215,7 +215,7 @@ export const createFisherman = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'fisherman.created',
+    action: AUDIT_ACTIONS.USER_CREATED,
     targetType: 'user',
     targetId: uid,
     metadata: {
@@ -285,7 +285,7 @@ export const updateFisherman = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'fisherman.updated',
+    action: AUDIT_ACTIONS.USER_UPDATED,
     targetType: 'user',
     targetId: fishermanUid,
     metadata: {

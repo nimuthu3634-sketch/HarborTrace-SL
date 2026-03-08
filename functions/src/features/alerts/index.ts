@@ -1,6 +1,6 @@
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 const ALERT_STATUSES = new Set(['pending', 'acknowledged', 'resolved']);
 
@@ -76,7 +76,7 @@ export const submitEmergencyAlert = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'emergency-alert.submitted',
+    action: AUDIT_ACTIONS.SOS_SUBMITTED,
     targetType: 'emergencyAlert',
     targetId: alertRef.id,
     metadata: {
@@ -134,7 +134,7 @@ export const updateEmergencyAlertStatus = onCall(async (request: CallableRequest
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: `emergency-alert.status.${nextStatus}`,
+    action: AUDIT_ACTIONS.SOS_STATUS_CHANGED,
     targetType: 'emergencyAlert',
     targetId: alertId,
     metadata: {

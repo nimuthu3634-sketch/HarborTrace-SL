@@ -1,6 +1,6 @@
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 const ALLOWED_AUTHOR_ROLES = new Set(['harbor_officer', 'admin']);
 const ALLOWED_TARGET_ROLES = new Set(['fisherman', 'harbor_officer', 'buyer', 'admin', 'all']);
@@ -74,7 +74,7 @@ export const createNotice = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'notice.created',
+    action: AUDIT_ACTIONS.NOTICE_CREATED,
     targetType: 'notice',
     targetId: noticeRef.id,
     metadata: {
@@ -140,7 +140,7 @@ export const updateNotice = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'notice.updated',
+    action: AUDIT_ACTIONS.NOTICE_UPDATED,
     targetType: 'notice',
     targetId: noticeId,
     metadata: {

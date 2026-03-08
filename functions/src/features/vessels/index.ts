@@ -1,6 +1,6 @@
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 const ALLOWED_MANAGER_ROLES = new Set(['harbor_officer', 'admin']);
 const ALLOWED_VESSEL_STATUSES = new Set(['active', 'inactive', 'maintenance']);
@@ -99,7 +99,7 @@ export const createVessel = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'vessel.created',
+    action: AUDIT_ACTIONS.VESSEL_CREATED,
     targetType: 'vessel',
     targetId: vesselRef.id,
     metadata: {
@@ -156,7 +156,7 @@ export const updateVessel = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'vessel.updated',
+    action: AUDIT_ACTIONS.VESSEL_UPDATED,
     targetType: 'vessel',
     targetId: vesselId,
     metadata: {

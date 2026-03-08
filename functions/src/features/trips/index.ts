@@ -1,7 +1,7 @@
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 import { resolveTripStatus } from '../../shared/utils/tripStatus';
 
 const ALLOWED_STATUSES = new Set(['planned', 'active', 'completed', 'overdue', 'emergency']);
@@ -94,7 +94,7 @@ export const createTrip = onCall(async (request: CallableRequest) => {
   await writeAuditLog({
     actorUid: caller.uid,
     actorRole: caller.role,
-    action: 'trip.created',
+    action: AUDIT_ACTIONS.TRIP_CREATED,
     targetType: 'trip',
     targetId: tripRef.id,
     metadata: {
@@ -158,7 +158,7 @@ export const transitionTripStatus = onCall(async (request: CallableRequest) => {
     await writeAuditLog({
       actorUid: caller.uid,
       actorRole: caller.role,
-      action: `trip.status.${normalizedNextStatus}`,
+      action: AUDIT_ACTIONS.TRIP_STATUS_CHANGED,
       targetType: 'trip',
       targetId: tripId,
       metadata: {
@@ -197,7 +197,7 @@ export const updateOverdueTripStatuses = onSchedule('every 10 minutes', async ()
     snapshot.docs.map((doc) => writeAuditLog({
       actorUid: 'system',
       actorRole: 'system',
-      action: 'trip.status.overdue',
+      action: AUDIT_ACTIONS.TRIP_STATUS_CHANGED,
       targetType: 'trip',
       targetId: doc.id,
       metadata: {

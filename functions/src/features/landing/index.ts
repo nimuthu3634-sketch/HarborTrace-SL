@@ -1,7 +1,7 @@
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
 import { randomBytes } from 'node:crypto';
-import { writeAuditLog } from '../../shared/utils/audit';
+import { AUDIT_ACTIONS, writeAuditLog } from '../../shared/utils/audit';
 
 type LandingPayload = {
   tripId: string;
@@ -87,8 +87,8 @@ export const submitLandingIntake = onCall(async (request: CallableRequest<Landin
   await writeAuditLog({
     actorUid: uid,
     actorRole: role,
-    action: 'landing.submitted',
-    targetType: 'landings',
+    action: AUDIT_ACTIONS.LANDING_SUBMITTED,
+    targetType: 'landing',
     targetId: landingRef.id,
     metadata: {
       tripId: payload.tripId,
@@ -218,8 +218,8 @@ export const verifyLandingIntake = onCall(async (request: CallableRequest<Verify
   await writeAuditLog({
     actorUid: uid,
     actorRole: role,
-    action: `landing.${verificationStatus}`,
-    targetType: 'landings',
+    action: AUDIT_ACTIONS.LANDING_STATUS_CHANGED,
+    targetType: 'landing',
     targetId: landingId,
     metadata: {
       verificationStatus,

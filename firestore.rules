@@ -266,7 +266,8 @@ service cloud.firestore {
 
     match /harbors/{harborId} {
       allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman() || isBuyer());
-      allow create, update, delete: if isAdmin();
+      // Harbor writes must flow through trusted server paths so audit logs are guaranteed.
+      allow create, update, delete: if false;
     }
 
     match /notices/{noticeId} {

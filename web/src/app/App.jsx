@@ -28,6 +28,7 @@ import OfficerPendingAlertsPage from '../pages/OfficerPendingAlertsPage';
 import OfficerPendingLandingsPage from '../pages/OfficerPendingLandingsPage';
 import NoticeDetailPage from '../pages/NoticeDetailPage';
 import VesselDetailPage from '../pages/VesselDetailPage';
+import HarborDetailPage from '../pages/HarborDetailPage';
 
 function AppRoutes() {
   return (
@@ -63,6 +64,7 @@ function AppRoutes() {
                 <Route path="/vessels" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/vessels/:vesselId" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><VesselDetailPage /></ProtectedRoute>} />
                 <Route path="/harbors" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Port & Harbor Directory"><HarborsPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/harbors/:harborId" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><HarborDetailPage /></ProtectedRoute>} />
                 <Route path="/officer/trips/active" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerActiveTripsPage /></ProtectedRoute>} />
                 <Route path="/officer/trips/overdue" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerOverdueTripsPage /></ProtectedRoute>} />
                 <Route path="/officer/alerts/pending" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerPendingAlertsPage /></ProtectedRoute>} />

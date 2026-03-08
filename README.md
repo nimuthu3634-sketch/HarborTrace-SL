@@ -122,6 +122,22 @@ HarborTrace SL uses Firebase Authentication for identity and Firestore for role/
   - `auth.login.success` when sign-in succeeds.
   - `auth.login.failed` when sign-in fails.
 
+### Seed comprehensive demo data (Auth + Firestore)
+
+To load presentation-ready Sri Lankan demo data (users by role, harbors, vessels, trips, alerts, landings, fish batches, notices, and audit logs) into the emulators:
+
+```bash
+npm run seed:demo
+```
+
+This script:
+
+- starts Auth + Firestore emulators for the run,
+- upserts Firebase Auth demo accounts,
+- resets and reseeds core Firestore collections with realistic linked records.
+
+Default demo password for all seeded users: `DemoPass#2026`.
+
 ### Demo / seed users (presentation mode)
 
 For local emulator demos, create users in Firebase Auth emulator and add matching role profiles in Firestore (`users/{uid}`).

@@ -12,6 +12,7 @@
     "dev:web": "npm --workspace web run dev",
     "dev:emulators": "npm run build:functions && firebase emulators:start --only auth,firestore,functions",
     "dev:local": "npm run dev:emulators",
+    "seed:demo": "firebase emulators:exec --only auth,firestore \"node firebase/seed-demo-data.mjs\"",
     "build:web": "npm --workspace web run build",
     "lint:web": "npm --workspace web run lint",
     "test:web": "vitest run web/src/app/protectedRouteAccess.test.js",

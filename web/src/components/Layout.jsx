@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
 const links = [
@@ -18,21 +18,28 @@ const links = [
 export default function Layout({ children }) {
   const { role, signOut, profile } = useAuth();
   const visibleLinks = links.filter((link) => !role || link.roles.includes(role));
+  const roleLabel = String(role || 'unassigned').replace('_', ' ');
 
   return (
     <div className="layout">
-      <header>
-        <h1>HarborTrace SL</h1>
-        <p>
-          Signed in as <strong>{profile?.displayName || 'User'}</strong> · Role: <strong>{role || 'unassigned'}</strong>
-        </p>
-        <button onClick={signOut}>Sign out securely</button>
+      <header className="app-header">
+        <div>
+          <p className="eyebrow">Maritime catch traceability platform</p>
+          <h1>HarborTrace SL</h1>
+        </div>
+        <div className="header-meta">
+          <p>
+            Signed in as <strong>{profile?.displayName || 'User'}</strong>
+          </p>
+          <span className="role-badge">{roleLabel}</span>
+          <button onClick={signOut}>Sign out securely</button>
+        </div>
       </header>
-      <nav>
+      <nav className="app-nav">
         {visibleLinks.map(({ to, label }) => (
-          <Link key={to} to={to}>
+          <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'active' : '')}>
             {label}
-          </Link>
+          </NavLink>
         ))}
       </nav>
       <main>{children}</main>

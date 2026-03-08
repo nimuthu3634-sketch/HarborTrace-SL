@@ -6,7 +6,7 @@ export default function FeaturePage({ title, children }) {
   }, [title]);
 
   return (
-    <section className="card">
+    <section className="card feature-page">
       <h2>{title}</h2>
       {children}
     </section>

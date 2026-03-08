@@ -45,7 +45,7 @@ export default function BuyerBatchDetailPage() {
       <h2>Batch Verification Details</h2>
       <p>Buyer-safe traceability data for procurement validation.</p>
 
-      {!batch && !notFound && <p>Loading verification details…</p>}
+      {!batch && !notFound && <p className="state">Loading verification details…</p>}
 
       {batch && (
         <div className="landing-detail-grid" style={{ marginTop: '.85rem' }}>
@@ -61,7 +61,7 @@ export default function BuyerBatchDetailPage() {
         </div>
       )}
 
-      {notFound && <p>No buyer-safe verification record was found for this batch code.</p>}
+      {notFound && <p className="state">No buyer-safe verification record was found for this batch code.</p>}
 
       <div className="detail-actions">
         <Link to="/batches">Back to buyer search</Link>

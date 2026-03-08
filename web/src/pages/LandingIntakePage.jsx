@@ -49,8 +49,9 @@ export default function LandingIntakePage() {
   return (
     <section className="card">
       <h2>Landing Intake Form</h2>
-      <p>Submit your landed catch. Verification status is automatically set to pending.</p>
+      <p className="helper-text">Submit your landed catch with complete details. Verification status is automatically set to pending.</p>
       <form className="landing-form" onSubmit={onSubmit}>
+        <div className="form-grid">
         <label>Trip ID<input name="tripId" value={form.tripId} onChange={onChange} required /></label>
         <label>Fish Type<input name="fishType" value={form.fishType} onChange={onChange} required /></label>
         <label>Quantity<input type="number" min="1" name="quantity" value={form.quantity} onChange={onChange} required /></label>
@@ -59,8 +60,12 @@ export default function LandingIntakePage() {
         <label>Condition Status<input name="conditionStatus" value={form.conditionStatus} onChange={onChange} required /></label>
         <label>Landing Harbor ID<input name="landingHarborId" value={form.landingHarborId} onChange={onChange} required /></label>
         <label>Landing Time<input type="datetime-local" name="landingTime" value={form.landingTime} onChange={onChange} required /></label>
+        </div>
         {error && <p className="error">{error}</p>}
-        <button type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Landing Intake'}</button>
+        <div className="form-actions">
+          <button type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Landing Intake'}</button>
+          <p className="helper-text">Ensure trip ID and harbor ID match your registered voyage.</p>
+        </div>
       </form>
     </section>
   );

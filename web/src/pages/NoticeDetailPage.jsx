@@ -39,7 +39,7 @@ export default function NoticeDetailPage() {
   }, [noticeId]);
 
   if (loading) {
-    return <section className="card"><p>Loading notice…</p></section>;
+    return <section className="card"><p className="state">Loading notice…</p></section>;
   }
 
   if (error) {

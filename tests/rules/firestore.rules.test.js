@@ -293,6 +293,48 @@ describe('Firestore security rules', () => {
     }));
   });
 
+  it('enforces role-targeted notice reads and blocks client-side writes', async () => {
+    await seedDoc('notices', 'noticeFish', {
+      title: 'Storm warning',
+      body: 'Avoid western deep sea routes this evening.',
+      severity: 'warning',
+      targetRole: 'fisherman',
+      createdBy: 'off1',
+      createdAt: new Date()
+    });
+    await seedDoc('notices', 'noticeAll', {
+      title: 'Harbor closed',
+      body: 'Harbor operations pause for maintenance.',
+      severity: 'info',
+      targetRole: 'all',
+      createdBy: 'admin1',
+      createdAt: new Date()
+    });
+
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    const buyerDb = testEnv.authenticatedContext('buyer1').firestore();
+    const officerDb = testEnv.authenticatedContext('off1').firestore();
+
+    await assertSucceeds(getDoc(doc(fisherDb, 'notices', 'noticeFish')));
+    await assertFails(getDoc(doc(buyerDb, 'notices', 'noticeFish')));
+    await assertSucceeds(getDoc(doc(buyerDb, 'notices', 'noticeAll')));
+    await assertSucceeds(getDoc(doc(officerDb, 'notices', 'noticeFish')));
+
+    await assertFails(setDoc(doc(officerDb, 'notices', 'newNotice'), {
+      title: 'Client write',
+      body: 'Should fail',
+      severity: 'info',
+      targetRole: 'all',
+      createdBy: 'off1',
+      createdAt: new Date()
+    }));
+
+    await assertFails(updateDoc(doc(officerDb, 'notices', 'noticeFish'), {
+      title: 'Edited from client'
+    }));
+  });
+
+
   it('allows buyer to read only buyerSafe batches', async () => {
     await seedDoc('batches', 'safeBatch', { buyerSafe: true, lotCode: 'LOT-1' });
     await seedDoc('batches', 'unsafeBatch', { buyerSafe: false, lotCode: 'LOT-2' });

@@ -27,6 +27,7 @@ import OfficerOverdueTripsPage from '../pages/OfficerOverdueTripsPage';
 import OfficerPendingAlertsPage from '../pages/OfficerPendingAlertsPage';
 import OfficerPendingLandingsPage from '../pages/OfficerPendingLandingsPage';
 import NoticeDetailPage from '../pages/NoticeDetailPage';
+import VesselDetailPage from '../pages/VesselDetailPage';
 
 function AppRoutes() {
   return (
@@ -59,7 +60,8 @@ function AppRoutes() {
                 <Route path="/batches/verify/:batchCode" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Batch Verification Details"><BuyerBatchDetailPage /></FeaturePage></ProtectedRoute>} />
                 <Route path="/notices" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'buyer', 'admin']}><FeaturePage title="Harbor Operations Bulletins"><NoticesPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/notices/:noticeId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'buyer', 'admin']}><NoticeDetailPage /></ProtectedRoute>} />
-                <Route path="/vessels" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/vessels" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/vessels/:vesselId" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><VesselDetailPage /></ProtectedRoute>} />
                 <Route path="/harbors" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Port & Harbor Directory"><HarborsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/officer/trips/active" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerActiveTripsPage /></ProtectedRoute>} />
                 <Route path="/officer/trips/overdue" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><OfficerOverdueTripsPage /></ProtectedRoute>} />

@@ -8,7 +8,7 @@ const links = [
   { to: '/landings', label: 'Landing Intake', roles: ['fisherman', 'harbor_officer', 'admin'] },
   { to: '/batches', label: 'Catch Batches', roles: ['buyer', 'harbor_officer', 'admin'] },
   { to: '/notices', label: 'Harbor Bulletins', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] },
-  { to: '/vessels', label: 'Fleet Registry', roles: ['fisherman', 'harbor_officer', 'admin'] },
+  { to: '/vessels', label: 'Fleet Registry', roles: ['harbor_officer', 'admin'] },
   { to: '/harbors', label: 'Port Directory', roles: ['harbor_officer', 'admin'] },
   { to: '/audit', label: 'Compliance Audit', roles: ['admin'] },
   { to: '/analytics', label: 'Performance Insights', roles: ['admin'] },

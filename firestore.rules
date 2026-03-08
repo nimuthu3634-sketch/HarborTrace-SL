@@ -260,8 +260,8 @@ service cloud.firestore {
     // ---- Operational/supporting collections -------------------------------------------------
     match /vessels/{vesselId} {
       allow read: if signedIn() && (isAdmin() || isOfficer() || isFisherman());
-      allow create, update: if signedIn() && (isAdmin() || isOfficer());
-      allow delete: if isAdmin();
+      // Vessel writes must flow through trusted server paths so duplicate checks and audit logs are enforced.
+      allow create, update, delete: if false;
     }
 
     match /harbors/{harborId} {

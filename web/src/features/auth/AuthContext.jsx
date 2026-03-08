@@ -1,9 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../lib/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
+import { auth, functions } from '../../lib/firebase';
 
 const AuthContext = createContext(null);
+
+const roleHomeRoutes = {
+  fisherman: '/trips',
+  harbor_officer: '/landings',
+  buyer: '/batches',
+  admin: '/audit'
+};
+
+const getSessionProfileCallable = httpsCallable(functions, 'getSessionProfile');
+const logAuthAttemptCallable = httpsCallable(functions, 'logAuthAttempt');
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -12,14 +22,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (currentUser) => {
+      setLoading(true);
       setUser(currentUser);
-      if (currentUser) {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        setProfile(snap.exists() ? snap.data() : null);
-      } else {
+
+      if (!currentUser) {
         setProfile(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const response = await getSessionProfileCallable();
+        setProfile(response.data || null);
+      } catch {
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
     });
   }, []);
 
@@ -29,8 +48,30 @@ export function AuthProvider({ children }) {
       profile,
       role: profile?.role,
       loading,
-      signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
-      signOut: () => signOut(auth)
+      getDefaultRouteForRole: (role) => roleHomeRoutes[role] || '/unauthorized',
+      signIn: async (email, password) => {
+        try {
+          const credential = await signInWithEmailAndPassword(auth, email, password);
+          try {
+            await logAuthAttemptCallable({ outcome: 'success' });
+          } catch {
+            // noop: audit logging should not block sign-in
+          }
+          return credential;
+        } catch (error) {
+          try {
+            await logAuthAttemptCallable({
+              outcome: 'failed',
+              email,
+              code: error?.code || 'unknown'
+            });
+          } catch {
+            // noop: secondary failure should not shadow auth failure
+          }
+          throw error;
+        }
+      },
+      signOut: () => firebaseSignOut(auth)
     }),
     [loading, profile, user]
   );

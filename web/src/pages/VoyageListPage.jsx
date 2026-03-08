@@ -2,7 +2,7 @@ import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestor
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
-import { resolveVoyageStatus, voyageFilters, formatTimestamp } from '../features/trips/tripStatus';
+import { resolveVoyageStatus, voyageFilters, formatTimestamp, tripStatusClassName, tripRowClassName } from '../features/trips/tripStatus';
 import { db } from '../lib/firebase';
 
 export default function VoyageListPage() {
@@ -57,16 +57,19 @@ export default function VoyageListPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredTrips.map((trip) => (
-              <tr key={trip.id}>
-                <td><Link to={`/trips/${trip.id}`}>{trip.vesselId}</Link></td>
-                <td>{trip.destinationZone}</td>
-                <td>{resolveVoyageStatus(trip)}</td>
-                <td>{formatTimestamp(trip.departureTime)}</td>
-                <td>{formatTimestamp(trip.expectedReturnTime)}</td>
-                <td>{trip.fishermanUid}</td>
-              </tr>
-            ))}
+            {filteredTrips.map((trip) => {
+              const status = resolveVoyageStatus(trip);
+              return (
+                <tr key={trip.id} className={tripRowClassName(status)}>
+                  <td><Link to={`/trips/${trip.id}`}>{trip.vesselId}</Link></td>
+                  <td>{trip.destinationZone}</td>
+                  <td><span className={tripStatusClassName(status)}>{status}</span></td>
+                  <td>{formatTimestamp(trip.departureTime)}</td>
+                  <td>{formatTimestamp(trip.expectedReturnTime)}</td>
+                  <td>{trip.fishermanUid}</td>
+                </tr>
+              );
+            })}
             {!filteredTrips.length && (
               <tr>
                 <td colSpan={6}>No voyages found in this filter.</td>

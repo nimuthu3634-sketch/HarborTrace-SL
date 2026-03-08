@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { db, functions } from '../lib/firebase';
 import { useAuth } from '../features/auth/AuthContext';
-import { formatTimestamp, resolveVoyageStatus } from '../features/trips/tripStatus';
+import { formatTimestamp, resolveVoyageStatus, tripStatusClassName } from '../features/trips/tripStatus';
 
 const transitionTripStatusCallable = httpsCallable(functions, 'transitionTripStatus');
 
@@ -58,6 +58,8 @@ export default function VoyageDetailPage() {
     );
   }
 
+  const status = resolveVoyageStatus(trip);
+
   return (
     <section className="card">
       <h2>Voyage Detail</h2>
@@ -70,15 +72,15 @@ export default function VoyageDetailPage() {
         <li><strong>Departure Time:</strong> {formatTimestamp(trip.departureTime)}</li>
         <li><strong>Expected Return Time:</strong> {formatTimestamp(trip.expectedReturnTime)}</li>
         <li><strong>Emergency Contact:</strong> {trip.emergencyContact}</li>
-        <li><strong>Status:</strong> {resolveVoyageStatus(trip)}</li>
+        <li><strong>Status:</strong> <span className={tripStatusClassName(status)}>{status}</span></li>
         <li><strong>Notes:</strong> {trip.notes || '—'}</li>
       </ul>
 
       {!!statusOptions.length && (
         <div className="filter-row">
-          {statusOptions.map((status) => (
-            <button key={status} type="button" className="secondary" disabled={busyStatus === status} onClick={() => updateStatus(status)}>
-              {busyStatus === status ? 'Updating…' : `Mark ${status}`}
+          {statusOptions.map((nextStatus) => (
+            <button key={nextStatus} type="button" className="secondary" disabled={busyStatus === nextStatus} onClick={() => updateStatus(nextStatus)}>
+              {busyStatus === nextStatus ? 'Updating…' : `Mark ${nextStatus}`}
             </button>
           ))}
         </div>

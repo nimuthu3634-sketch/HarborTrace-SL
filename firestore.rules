@@ -213,7 +213,8 @@ service cloud.firestore {
           && unchanged('verifiedAt')
           && unchanged('verificationComments')
           && unchanged('batchId')
-          && unchanged('batchCode'))
+          && unchanged('batchCode')
+          && unchanged('batchVerificationUrl'))
         // Client-side verification state changes are blocked for all roles; use Cloud Functions.
         || ((isOfficer() || isAdmin())
           && unchanged('verificationStatus')
@@ -221,7 +222,8 @@ service cloud.firestore {
           && unchanged('verifiedAt')
           && unchanged('verificationComments')
           && unchanged('batchId')
-          && unchanged('batchCode'))
+          && unchanged('batchCode')
+          && unchanged('batchVerificationUrl'))
       );
 
       allow delete: if isAdmin();
@@ -238,6 +240,23 @@ service cloud.firestore {
 
       allow create, update: if isAdmin() || isOfficer();
       allow delete: if isAdmin();
+    }
+
+    match /fishBatches/{batchId} {
+      allow read: if signedIn() && (
+        isAdmin()
+        || isOfficer()
+        || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
+        || (isBuyer() && resource.data.buyerVisibleStatus == 'visible')
+      );
+
+      allow create, update: if isAdmin() || isOfficer();
+      allow delete: if isAdmin();
+    }
+
+    match /batchPublicVerifications/{batchCode} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // ---- Operational/supporting collections -------------------------------------------------

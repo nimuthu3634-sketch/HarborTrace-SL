@@ -66,12 +66,30 @@ describe('Firestore security rules', () => {
     await seedDoc('trips', 'ownTrip', {
       fishermanUid: 'fish1',
       status: 'active',
-      verificationStatus: 'pending'
+      createdByUid: 'fish1',
+      createdByRole: 'fisherman',
+      vesselId: 'v1',
+      departureHarborId: 'h1',
+      destinationZone: 'Z1',
+      crewCount: 4,
+      departureTime: new Date(),
+      expectedReturnTime: new Date(Date.now() + 60_000),
+      emergencyContact: '0771234567',
+      notes: ''
     });
     await seedDoc('trips', 'otherTrip', {
       fishermanUid: 'fish2',
       status: 'active',
-      verificationStatus: 'pending'
+      createdByUid: 'fish1',
+      createdByRole: 'fisherman',
+      vesselId: 'v1',
+      departureHarborId: 'h1',
+      destinationZone: 'Z1',
+      crewCount: 4,
+      departureTime: new Date(),
+      expectedReturnTime: new Date(Date.now() + 60_000),
+      emergencyContact: '0771234567',
+      notes: ''
     });
 
     const fisherDb = testEnv.authenticatedContext('fish1').firestore();
@@ -79,10 +97,55 @@ describe('Firestore security rules', () => {
     await assertSucceeds(getDoc(doc(fisherDb, 'trips', 'ownTrip')));
     await assertFails(getDoc(doc(fisherDb, 'trips', 'otherTrip')));
 
-    await assertSucceeds(updateDoc(doc(fisherDb, 'trips', 'ownTrip'), { status: 'returned' }));
-    await assertFails(updateDoc(doc(fisherDb, 'trips', 'otherTrip'), { status: 'returned' }));
+    await assertSucceeds(updateDoc(doc(fisherDb, 'trips', 'ownTrip'), { status: 'completed' }));
+    await assertFails(updateDoc(doc(fisherDb, 'trips', 'otherTrip'), { status: 'completed' }));
   });
 
+
+  it('allows fisherman to create trips only for themselves with approved fields', async () => {
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+
+    const ownTripPayload = {
+      vesselId: 'vessel-1',
+      departureHarborId: 'harbor-1',
+      destinationZone: 'Zone A',
+      crewCount: 4,
+      departureTime: new Date(),
+      expectedReturnTime: new Date(Date.now() + 60_000),
+      emergencyContact: '0770000000',
+      notes: 'night fishing',
+      fishermanUid: 'fish1',
+      status: 'planned',
+      createdByUid: 'fish1',
+      createdByRole: 'fisherman',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastStatusChangedAt: new Date()
+    };
+
+    await assertSucceeds(setDoc(doc(fisherDb, 'trips', 'newOwnTrip'), ownTripPayload));
+    await assertFails(setDoc(doc(fisherDb, 'trips', 'newOtherTrip'), { ...ownTripPayload, fishermanUid: 'fish2' }));
+  });
+
+  it('prevents fisherman from changing protected trip registration fields', async () => {
+    await seedDoc('trips', 'tripProtected', {
+      fishermanUid: 'fish1',
+      status: 'active',
+      createdByUid: 'fish1',
+      createdByRole: 'fisherman',
+      vesselId: 'v1',
+      departureHarborId: 'h1',
+      destinationZone: 'Z1',
+      crewCount: 4,
+      departureTime: new Date(),
+      expectedReturnTime: new Date(Date.now() + 60_000),
+      emergencyContact: '0771234567',
+      notes: ''
+    });
+
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    await assertFails(updateDoc(doc(fisherDb, 'trips', 'tripProtected'), { vesselId: 'v9' }));
+  });
   it('blocks fisherman from writing protected verification fields', async () => {
     await seedDoc('landings', 'landing1', {
       fishermanUid: 'fish1',

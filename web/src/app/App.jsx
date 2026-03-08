@@ -8,7 +8,6 @@ import BatchesPanel from '../features/batches/BatchesPanel';
 import HarborsPanel from '../features/harbors/HarborsPanel';
 import LandingsPanel from '../features/landings/LandingsPanel';
 import NoticesPanel from '../features/notices/NoticesPanel';
-import TripsPanel from '../features/trips/TripsPanel';
 import VesselsPanel from '../features/vessels/VesselsPanel';
 import ProtectedRoute from './ProtectedRoute';
 import AboutPage from '../pages/AboutPage';
@@ -17,6 +16,9 @@ import DashboardPage from '../pages/DashboardPage';
 import FeaturePage from '../pages/FeaturePage';
 import LoginPage from '../pages/LoginPage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
+import RegisterDeparturePage from '../pages/RegisterDeparturePage';
+import VoyageDetailPage from '../pages/VoyageDetailPage';
+import VoyageListPage from '../pages/VoyageListPage';
 
 function AppRoutes() {
   return (
@@ -38,7 +40,9 @@ function AppRoutes() {
             <Layout>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
-                <Route path="/trips" element={<ProtectedRoute allowedRoles={['fisherman', 'admin']}><FeaturePage title="Voyage Registration & Sea Log"><TripsPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/trips" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><VoyageListPage /></ProtectedRoute>} />
+                <Route path="/trips/register" element={<ProtectedRoute allowedRoles={['fisherman']}><RegisterDeparturePage /></ProtectedRoute>} />
+                <Route path="/trips/:tripId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><VoyageDetailPage /></ProtectedRoute>} />
                 <Route path="/alerts" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fisher Safety & Incident Alerts"><AlertsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/landings" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Catch Landing Intake & Verification"><LandingsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/batches" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Catch Batch Traceability"><BatchesPanel /></FeaturePage></ProtectedRoute>} />

@@ -63,6 +63,10 @@ service cloud.firestore {
 
     // ---- Trip records -----------------------------------------------------------------------
     match /trips/{tripId} {
+      function validTripStatus(status) {
+        return status in ['planned', 'active', 'completed', 'overdue', 'emergency'];
+      }
+
       allow read: if signedIn() && (
         isAdmin()
         || isOfficer()
@@ -71,17 +75,41 @@ service cloud.firestore {
 
       allow create: if isFisherman()
                     && request.resource.data.fishermanUid == request.auth.uid
-                    && request.resource.data.status in ['active', 'returned', 'overdue'];
+                    && request.resource.data.createdByUid == request.auth.uid
+                    && request.resource.data.createdByRole == 'fisherman'
+                    && validTripStatus(request.resource.data.status)
+                    && hasOnlyKeys([
+                      'vesselId',
+                      'departureHarborId',
+                      'destinationZone',
+                      'crewCount',
+                      'departureTime',
+                      'expectedReturnTime',
+                      'emergencyContact',
+                      'notes',
+                      'fishermanUid',
+                      'status',
+                      'createdByUid',
+                      'createdByRole',
+                      'createdAt',
+                      'updatedAt',
+                      'lastStatusChangedAt'
+                    ]);
 
       allow update: if signedIn() && (
-        // Fisherman can update own trip, but cannot alter protected verification fields.
         (isFisherman()
           && resource.data.fishermanUid == request.auth.uid
           && request.resource.data.fishermanUid == resource.data.fishermanUid
-          && unchanged('verificationStatus')
-          && unchanged('verifiedByOfficerUid')
-          && unchanged('verifiedAt'))
-        // Harbor officers/admin can perform workflow state transitions.
+          && request.resource.data.createdByUid == resource.data.createdByUid
+          && request.resource.data.createdByRole == resource.data.createdByRole
+          && unchanged('vesselId')
+          && unchanged('departureHarborId')
+          && unchanged('destinationZone')
+          && unchanged('crewCount')
+          && unchanged('departureTime')
+          && unchanged('expectedReturnTime')
+          && unchanged('emergencyContact')
+          && validTripStatus(request.resource.data.status))
         || isOfficer()
         || isAdmin()
       );

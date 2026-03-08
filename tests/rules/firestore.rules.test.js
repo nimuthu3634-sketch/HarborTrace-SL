@@ -231,6 +231,43 @@ describe('Firestore security rules', () => {
     await assertFails(updateDoc(doc(fisherDb, 'emergencyAlerts', 'a2'), { status: 'resolved' }));
   });
 
+
+  it('prevents officers from directly updating landing verification fields from clients', async () => {
+    await seedDoc('landings', 'landingOfficerCheck', {
+      fishermanUid: 'fish1',
+      submittedByUid: 'fish1',
+      tripId: 'trip1',
+      fishType: 'Tuna',
+      quantity: 20,
+      totalWeightKg: 100,
+      storageMethod: 'iced',
+      conditionStatus: 'fresh',
+      landingHarborId: 'harbor-1',
+      landingTime: new Date(),
+      verificationStatus: 'pending',
+      verifiedByOfficerUid: null,
+      verifiedAt: null,
+      verificationComments: null,
+      batchId: null,
+      batchCode: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    const officerDb = testEnv.authenticatedContext('off1').firestore();
+
+    await assertFails(updateDoc(doc(officerDb, 'landings', 'landingOfficerCheck'), {
+      verificationStatus: 'verified',
+      verifiedByOfficerUid: 'off1',
+      verifiedAt: new Date()
+    }));
+
+    await assertSucceeds(updateDoc(doc(officerDb, 'landings', 'landingOfficerCheck'), {
+      conditionStatus: 'excellent',
+      updatedAt: new Date()
+    }));
+  });
+
   it('allows harbor officer workflow updates on operational collections', async () => {
     await seedDoc('trips', 'activeTrip', { fishermanUid: 'fish1', status: 'active' });
     await seedDoc('emergencyAlerts', 'a1', {

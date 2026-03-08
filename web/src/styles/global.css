@@ -165,3 +165,76 @@ td {
   border-top: 1px solid #e4ecf6;
   padding-top: .85rem;
 }
+
+.landing-form label {
+  display: grid;
+  gap: .3rem;
+  font-size: .92rem;
+  color: #17324d;
+}
+
+.landing-status-badge {
+  display: inline-block;
+  padding: .22rem .62rem;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.landing-status-pending {
+  background: #fff7d6;
+  color: #8a5b00;
+}
+
+.landing-status-verified {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.landing-status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.landing-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35rem 1rem;
+}
+
+.detail-actions {
+  margin-top: .9rem;
+  display: flex;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .layout {
+    padding: .75rem;
+  }
+
+  .card {
+    padding: .9rem;
+  }
+
+  .landing-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  th,
+  td {
+    font-size: .86rem;
+    padding: .45rem;
+  }
+
+  .landing-form {
+    gap: .8rem;
+  }
+
+  .landing-form input {
+    width: 100%;
+  }
+}

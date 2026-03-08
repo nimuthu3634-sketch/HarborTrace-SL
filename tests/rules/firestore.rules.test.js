@@ -335,6 +335,34 @@ describe('Firestore security rules', () => {
   });
 
 
+
+  it('blocks all client-side vessel writes while allowing authenticated reads', async () => {
+    await seedDoc('vessels', 'vessel1', {
+      vesselName: 'Sea Wind',
+      registrationNumber: 'REG-001',
+      ownerUserId: 'fish1',
+      vesselType: 'trawler',
+      capacity: 12,
+      status: 'active'
+    });
+
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    const officerDb = testEnv.authenticatedContext('off1').firestore();
+
+    await assertSucceeds(getDoc(doc(fisherDb, 'vessels', 'vessel1')));
+    await assertSucceeds(getDoc(doc(officerDb, 'vessels', 'vessel1')));
+
+    await assertFails(setDoc(doc(officerDb, 'vessels', 'newVessel'), {
+      vesselName: 'Client Write',
+      registrationNumber: 'REG-002',
+      ownerUserId: 'fish1',
+      vesselType: 'trawler',
+      capacity: 10,
+      status: 'active'
+    }));
+    await assertFails(updateDoc(doc(officerDb, 'vessels', 'vessel1'), { status: 'inactive' }));
+  });
+
   it('allows buyer to read only buyerSafe batches', async () => {
     await seedDoc('batches', 'safeBatch', { buyerSafe: true, lotCode: 'LOT-1' });
     await seedDoc('batches', 'unsafeBatch', { buyerSafe: false, lotCode: 'LOT-2' });

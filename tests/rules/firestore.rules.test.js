@@ -159,17 +159,72 @@ describe('Firestore security rules', () => {
     await assertFails(updateDoc(doc(fisherDb, 'landings', 'landing1'), { verificationStatus: 'approved' }));
   });
 
-  it('allows harbor officer workflow updates on operational collections', async () => {
-    await seedDoc('alerts', 'a1', {
+
+  it('allows fisherman to create emergency alerts only for their own active trip', async () => {
+    await seedDoc('trips', 'ownActiveTrip', { fishermanUid: 'fish1', status: 'active' });
+    await seedDoc('trips', 'ownCompletedTrip', { fishermanUid: 'fish1', status: 'completed' });
+    await seedDoc('trips', 'otherActiveTrip', { fishermanUid: 'fish2', status: 'active' });
+
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    const payload = {
       fishermanUid: 'fish1',
-      message: 'engine issue',
-      verificationStatus: 'pending'
+      activeTripId: 'ownActiveTrip',
+      alertType: 'medical',
+      incidentMessage: 'Crew member injured',
+      lastKnownLocation: '6.93,79.85',
+      status: 'pending',
+      statusUpdatedByUid: null,
+      statusUpdatedAt: null,
+      acknowledgedAt: null,
+      resolvedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await assertSucceeds(setDoc(doc(fisherDb, 'emergencyAlerts', 'okAlert'), payload));
+    await assertFails(setDoc(doc(fisherDb, 'emergencyAlerts', 'badTripStatus'), { ...payload, activeTripId: 'ownCompletedTrip' }));
+    await assertFails(setDoc(doc(fisherDb, 'emergencyAlerts', 'badOwnership'), { ...payload, activeTripId: 'otherActiveTrip' }));
+  });
+
+  it('prevents fisherman from updating emergency alert status fields', async () => {
+    await seedDoc('emergencyAlerts', 'a2', {
+      fishermanUid: 'fish1',
+      activeTripId: 'trip1',
+      alertType: 'collision',
+      incidentMessage: 'Near-collision reported',
+      lastKnownLocation: '7.00,80.00',
+      status: 'pending',
+      statusUpdatedByUid: null,
+      statusUpdatedAt: null,
+      acknowledgedAt: null,
+      resolvedAt: null
+    });
+
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    await assertFails(updateDoc(doc(fisherDb, 'emergencyAlerts', 'a2'), { status: 'resolved' }));
+  });
+
+  it('allows harbor officer workflow updates on operational collections', async () => {
+    await seedDoc('trips', 'activeTrip', { fishermanUid: 'fish1', status: 'active' });
+    await seedDoc('emergencyAlerts', 'a1', {
+      fishermanUid: 'fish1',
+      activeTripId: 'activeTrip',
+      alertType: 'medical',
+      incidentMessage: 'engine issue',
+      lastKnownLocation: '6.93,79.85',
+      status: 'pending',
+      statusUpdatedByUid: null,
+      statusUpdatedAt: null,
+      acknowledgedAt: null,
+      resolvedAt: null
     });
 
     const officerDb = testEnv.authenticatedContext('off1').firestore();
-    await assertSucceeds(updateDoc(doc(officerDb, 'alerts', 'a1'), {
-      verificationStatus: 'resolved',
-      resolvedByOfficerUid: 'off1'
+    await assertSucceeds(updateDoc(doc(officerDb, 'emergencyAlerts', 'a1'), {
+      status: 'acknowledged',
+      statusUpdatedByUid: 'off1',
+      statusUpdatedAt: new Date(),
+      acknowledgedAt: new Date()
     }));
   });
 

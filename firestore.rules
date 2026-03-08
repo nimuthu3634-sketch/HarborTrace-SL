@@ -118,26 +118,54 @@ service cloud.firestore {
     }
 
     // ---- Incident alerts --------------------------------------------------------------------
-    match /alerts/{alertId} {
+    match /emergencyAlerts/{alertId} {
+      function validAlertStatus(status) {
+        return status in ['pending', 'acknowledged', 'resolved'];
+      }
+
+      function activeTripOwnedByCaller(tripId) {
+        let trip = get(/databases/$(database)/documents/trips/$(tripId));
+        return trip.exists()
+               && trip.data.fishermanUid == request.auth.uid
+               && trip.data.status == 'active';
+      }
+
       allow read: if signedIn() && (
         isAdmin()
         || isOfficer()
         || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
       );
 
-      allow create: if isFisherman() && request.resource.data.fishermanUid == request.auth.uid;
+      allow create: if isFisherman()
+                    && request.resource.data.fishermanUid == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.statusUpdatedByUid == null
+                    && request.resource.data.statusUpdatedAt == null
+                    && request.resource.data.acknowledgedAt == null
+                    && request.resource.data.resolvedAt == null
+                    && activeTripOwnedByCaller(request.resource.data.activeTripId)
+                    && hasOnlyKeys([
+                      'fishermanUid',
+                      'activeTripId',
+                      'alertType',
+                      'incidentMessage',
+                      'lastKnownLocation',
+                      'status',
+                      'statusUpdatedByUid',
+                      'statusUpdatedAt',
+                      'acknowledgedAt',
+                      'resolvedAt',
+                      'createdAt',
+                      'updatedAt'
+                    ]);
 
-      allow update: if signedIn() && (
-        // Fisherman can update own alert details, but not verification/workflow fields.
-        (isFisherman()
-          && resource.data.fishermanUid == request.auth.uid
-          && request.resource.data.fishermanUid == resource.data.fishermanUid
-          && unchanged('verificationStatus')
-          && unchanged('resolvedByOfficerUid')
-          && unchanged('resolvedAt'))
-        || isOfficer()
-        || isAdmin()
-      );
+      allow update: if signedIn() && (isOfficer() || isAdmin())
+                    && request.resource.data.fishermanUid == resource.data.fishermanUid
+                    && request.resource.data.activeTripId == resource.data.activeTripId
+                    && request.resource.data.alertType == resource.data.alertType
+                    && request.resource.data.incidentMessage == resource.data.incidentMessage
+                    && request.resource.data.lastKnownLocation == resource.data.lastKnownLocation
+                    && validAlertStatus(request.resource.data.status);
 
       allow delete: if isAdmin();
     }

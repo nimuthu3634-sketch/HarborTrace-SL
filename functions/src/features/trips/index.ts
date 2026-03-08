@@ -1,6 +1,8 @@
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { writeAuditLog } from '../../shared/utils/audit';
+import { resolveTripStatus } from '../../shared/utils/tripStatus';
 
 const ALLOWED_STATUSES = new Set(['planned', 'active', 'completed', 'overdue', 'emergency']);
 
@@ -62,7 +64,11 @@ export const createTrip = onCall(async (request: CallableRequest) => {
     throw new HttpsError('invalid-argument', 'expectedReturnTime must be after departureTime.');
   }
 
-  const status = departureTime.getTime() > Date.now() ? 'planned' : 'active';
+  const initialStatus = departureTime.getTime() > Date.now() ? 'planned' : 'active';
+  const status = resolveTripStatus({
+    status: initialStatus,
+    expectedReturnTime
+  });
 
   const payload = {
     vesselId: asString(request.data?.vesselId, 'vesselId'),
@@ -117,7 +123,7 @@ export const transitionTripStatus = onCall(async (request: CallableRequest) => {
     throw new HttpsError('not-found', 'Trip does not exist.');
   }
 
-  const trip = tripSnap.data() as { fishermanUid?: string; status?: string };
+  const trip = tripSnap.data() as { fishermanUid?: string; status?: string; expectedReturnTime?: unknown };
   const isOwner = trip.fishermanUid === caller.uid;
   const isOfficerOrAdmin = caller.role === 'harbor_officer' || caller.role === 'admin';
 
@@ -132,30 +138,73 @@ export const transitionTripStatus = onCall(async (request: CallableRequest) => {
     }
   }
 
-  const currentStatus = String(trip.status ?? 'planned');
-  if (currentStatus === nextStatus) {
+  const currentStatus = resolveTripStatus(trip);
+  const normalizedNextStatus = resolveTripStatus({
+    status: nextStatus,
+    expectedReturnTime: trip.expectedReturnTime
+  });
+
+  if (currentStatus === normalizedNextStatus) {
     return { tripId, status: currentStatus, unchanged: true };
   }
 
   await tripRef.update({
-    status: nextStatus,
+    status: normalizedNextStatus,
     updatedAt: FieldValue.serverTimestamp(),
     lastStatusChangedAt: FieldValue.serverTimestamp()
   });
 
-  if (['active', 'completed', 'overdue', 'emergency'].includes(nextStatus)) {
+  if (['active', 'completed', 'overdue', 'emergency'].includes(normalizedNextStatus)) {
     await writeAuditLog({
       actorUid: caller.uid,
       actorRole: caller.role,
-      action: `trip.status.${nextStatus}`,
+      action: `trip.status.${normalizedNextStatus}`,
       targetType: 'trip',
       targetId: tripId,
       metadata: {
         previousStatus: currentStatus,
-        nextStatus
+        nextStatus: normalizedNextStatus
       }
     });
   }
 
-  return { tripId, status: nextStatus };
+  return { tripId, status: normalizedNextStatus };
+});
+
+export const updateOverdueTripStatuses = onSchedule('every 10 minutes', async () => {
+  const db = getFirestore();
+  const now = Timestamp.now();
+
+  const overdueQuery = db
+    .collection('trips')
+    .where('status', '==', 'active')
+    .where('expectedReturnTime', '<=', now);
+
+  const snapshot = await overdueQuery.get();
+  if (snapshot.empty) {
+    return;
+  }
+
+  const writes = snapshot.docs.map((doc) => doc.ref.update({
+    status: 'overdue',
+    updatedAt: FieldValue.serverTimestamp(),
+    lastStatusChangedAt: FieldValue.serverTimestamp()
+  }));
+
+  await Promise.all(writes);
+
+  await Promise.all(
+    snapshot.docs.map((doc) => writeAuditLog({
+      actorUid: 'system',
+      actorRole: 'system',
+      action: 'trip.status.overdue',
+      targetType: 'trip',
+      targetId: doc.id,
+      metadata: {
+        previousStatus: 'active',
+        nextStatus: 'overdue',
+        source: 'scheduled-overdue-check'
+      }
+    }))
+  );
 });

@@ -103,6 +103,11 @@ export default function DashboardPage() {
         <h2>Fisheries Operations Dashboard</h2>
         <p>Welcome{profile?.displayName ? `, ${profile.displayName}` : ''}.</p>
         <p>{roleDescriptions[role] || 'No fisheries role assigned yet. Please contact the system administrator to activate your account.'}</p>
+        {role === 'buyer' && (
+          <p>
+            Start with the <Link to="/batches">Buyer Batch Verification</Link> page to search by batch code and review buyer-safe traceability details.
+          </p>
+        )}
       </section>
     );
   }

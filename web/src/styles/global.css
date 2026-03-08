@@ -353,3 +353,48 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+.buyer-verify-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.buyer-search-card {
+  border: 1px solid #dce8f5;
+  border-radius: 12px;
+  padding: .95rem;
+  background: #fff;
+}
+
+.buyer-search-card h3 {
+  margin-top: 0;
+}
+
+.buyer-search-form label {
+  font-size: .9rem;
+  color: #35516e;
+}
+
+.buyer-search-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .55rem;
+}
+
+.buyer-helper-text {
+  margin: 0;
+  font-size: .85rem;
+  color: #516b84;
+}
+
+.buyer-search-result {
+  margin-top: .85rem;
+  padding-top: .75rem;
+  border-top: 1px solid #e4ecf6;
+}
+
+@media (max-width: 640px) {
+  .buyer-search-row {
+    grid-template-columns: 1fr;
+  }
+}

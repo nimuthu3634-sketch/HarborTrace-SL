@@ -11,6 +11,7 @@ import VesselsPanel from '../features/vessels/VesselsPanel';
 import ProtectedRoute from './ProtectedRoute';
 import AboutPage from '../pages/AboutPage';
 import BatchVerifyPage from '../pages/BatchVerifyPage';
+import BuyerBatchDetailPage from '../pages/BuyerBatchDetailPage';
 import DashboardPage from '../pages/DashboardPage';
 import FeaturePage from '../pages/FeaturePage';
 import LoginPage from '../pages/LoginPage';
@@ -54,6 +55,7 @@ function AppRoutes() {
                 <Route path="/landings/new" element={<ProtectedRoute allowedRoles={['fisherman']}><FeaturePage title="Landing Intake Form"><LandingIntakePage /></FeaturePage></ProtectedRoute>} />
                 <Route path="/landings/:landingId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Landing Intake Detail"><LandingDetailPage /></FeaturePage></ProtectedRoute>} />
                 <Route path="/batches" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Catch Batch Traceability"><BatchesPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/batches/verify/:batchCode" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Batch Verification Details"><BuyerBatchDetailPage /></FeaturePage></ProtectedRoute>} />
                 <Route path="/notices" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Harbor Operations Bulletins"><NoticesPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/vessels" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/harbors" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Port & Harbor Directory"><HarborsPanel /></FeaturePage></ProtectedRoute>} />

@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function userRole() {
+      return signedIn() ? userDoc(request.auth.uid).data.role : null;
+    }
+
+    function isAdmin() {
+      return userRole() == 'admin';
+    }
+
+    function isOfficer() {
+      return userRole() == 'harbor_officer';
+    }
+
+    function isFisherman() {
+      return userRole() == 'fisherman';
+    }
+
+    function isBuyer() {
+      return userRole() == 'buyer';
+    }
+
+    function canReadOperationalData() {
+      return isAdmin() || isOfficer() || isFisherman() || isBuyer();
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin() || isOfficer());
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.role in ['fisherman', 'harbor_officer', 'buyer', 'admin']
+                    && request.resource.data.uid == uid;
+      allow update: if signedIn()
+                    && (
+                      (request.auth.uid == uid && request.resource.data.role == resource.data.role)
+                      || isAdmin()
+                    );
+      allow delete: if isAdmin();
+    }
+
+    match /trips/{tripId} {
+      allow read: if signedIn() && (
+        resource.data.fishermanUid == request.auth.uid || isAdmin() || isOfficer()
+      );
+      allow create: if isFisherman()
+                    && request.resource.data.fishermanUid == request.auth.uid
+                    && request.resource.data.status in ['active', 'returned', 'overdue'];
+      allow update: if signedIn() && (
+        (resource.data.fishermanUid == request.auth.uid
+          && request.resource.data.fishermanUid == resource.data.fishermanUid)
+        || isAdmin() || isOfficer()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /alerts/{alertId} {
+      allow read: if signedIn() && (
+        resource.data.fishermanUid == request.auth.uid || isAdmin() || isOfficer()
+      );
+      allow create: if isFisherman() && request.resource.data.fishermanUid == request.auth.uid;
+      allow update: if isAdmin() || isOfficer();
+      allow delete: if isAdmin();
+    }
+
+    match /landings/{landingId} {
+      allow read: if canReadOperationalData();
+      allow create: if signedIn() && (isFisherman() || isOfficer() || isAdmin());
+      allow update: if signedIn() && (isOfficer() || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /batches/{batchId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /vessels/{vesselId} {
+      allow read: if canReadOperationalData();
+      allow create, update: if signedIn() && (isAdmin() || isOfficer() || isFisherman());
+      allow delete: if isAdmin();
+    }
+
+    match /harbors/{harborId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || isOfficer();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /analytics/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

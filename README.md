@@ -1,78 +1,74 @@
-# AGENTS.md
+# HarborTrace SL
 
-## Project name
-HarborTrace SL
-
-## Project summary
-HarborTrace SL is a secure fisheries operations platform for Sri Lanka.
-It supports fishermen, harbor officers, buyers, and administrators.
-The app manages trip registration, emergency alerts, catch/landing intake,
-landing verification, batch traceability, notices, and audit logging.
+Secure fisheries operations platform for Sri Lanka, built with React + Firebase.
 
 ## Stack
-- React + Vite frontend
+- React + Vite (`web/`)
 - Firebase Authentication
 - Cloud Firestore
-- Cloud Functions for Firebase
-- Firestore Security Rules
+- Cloud Functions for Firebase (`functions/`)
+- Firestore Security Rules (`firestore.rules`)
 - Firebase Local Emulator Suite
 
-## Business goals
-- Digitize fisheries workflows
-- Improve visibility of active and overdue trips
-- Improve fisher safety through incident alerts
-- Improve landing verification and traceability
-- Build a secure role-based system with auditability
+## Features delivered
+- Authentication flow scaffold with role-aware session context
+- Role-based dashboard and route protection
+- Fisherman workflows: trip registration, trip history listing, SOS alerts
+- Landing intake and officer/admin verification flow (trusted callable function)
+- Batch generation for traceability (trusted callable function)
+- Public batch verification page
+- Notices, vessel management, harbor management views
+- Audit log and admin analytics views
+- Server-side audit log creation in Cloud Functions
+- Emulator-backed Firestore security rules tests
 
-## User roles
-- fisherman
-- harbor_officer
-- buyer
-- admin
+## Local development
 
-## Domain wording
-Use practical fisheries terms:
-- Register Departure
-- Active Voyage
-- Landing Intake
-- Verification Status
-- Harbor Notice
-- Incident Alert
-- Batch Traceability
+### 1. Install
+```bash
+npm install
+npm run install:all
+```
 
-## Architecture rules
-- Keep frontend and backend separated clearly
-- Use feature-based folders
-- Keep UI components small and reusable
-- Put trusted write logic in Cloud Functions when needed
-- Keep Firestore document shapes consistent
-- Prefer readable code over clever code
+### 2. Configure environment for frontend
+Create `web/.env.local`:
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=harbortrace-sl-dev
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_USE_EMULATORS=true
+```
 
-## Firebase rules
-- Use Firebase Authentication for identity
-- Store app profile/role data in Firestore
-- Enforce access with Firestore Security Rules
-- Never use open Firestore rules in production
-- Test rules in Emulator Suite before finalizing
-- Use Cloud Functions for sensitive actions like verification and batch generation
+### 3. Run frontend
+```bash
+npm run dev:web
+```
 
-## Security rules
-- Never store plain-text passwords
-- Use least privilege for all roles
-- Prevent role escalation from the client
-- Validate input both in frontend and trusted backend logic
-- Log security-sensitive actions into audit records
-- Do not expose internal errors directly to users
+### 4. Run emulator suite
+```bash
+npx firebase emulators:start
+```
 
-## UX rules
-- Mobile-first for fisherman screens
-- Tablet/desktop optimized dashboards for officer/admin
-- Clear badges and statuses
-- Friendly loading, empty, and error states
-- Professional UI suitable for a final-year project demo
+## Security model summary
+- Role resolved from `users/{uid}` documents
+- Least-privilege rules for fisherman, harbor_officer, buyer, admin
+- Client cannot write `batches`, `auditLogs`, or `analytics`
+- Trusted operations handled in functions (`verifyLanding`, `generateFishBatch`, `publishNotice`)
 
-## Code quality
-- Update README whenever setup changes
-- Add emulator-based tests for Firestore Rules
-- Add tests for core workflows
-- Do not leave critical TODO placeholders
+## Architecture and data model
+See `docs/architecture.md` for:
+- folder structure
+- Firestore collections
+- role permissions
+- routes/pages
+- function responsibilities
+- phased implementation plan
+
+## Validation commands
+- Rules tests (direct): `npm run test:rules`
+- Rules tests (inside emulator): `npm run emulator:test`
+- Frontend lint: `npm run lint:web`
+- Frontend build: `npm run build:web`

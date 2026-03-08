@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "trips",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fishermanUid", "order": "ASCENDING" },
+        { "fieldPath": "departureAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "landings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "harborId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "batches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "verified", "order": "ASCENDING" },
+        { "fieldPath": "landingId", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

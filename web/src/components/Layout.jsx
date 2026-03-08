@@ -2,16 +2,17 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
 const links = [
-  ['/', 'Dashboard'],
-  ['/trips', 'Trips'],
-  ['/alerts', 'SOS Alerts'],
-  ['/landings', 'Landings'],
-  ['/batches', 'Batches'],
-  ['/notices', 'Notices'],
-  ['/vessels', 'Vessels'],
-  ['/harbors', 'Harbors'],
-  ['/audit', 'Audit'],
-  ['/analytics', 'Analytics']
+  ['/', 'Operations Dashboard'],
+  ['/trips', 'Voyage Log'],
+  ['/alerts', 'Incident Alerts'],
+  ['/landings', 'Landing Intake'],
+  ['/batches', 'Catch Batches'],
+  ['/notices', 'Harbor Bulletins'],
+  ['/vessels', 'Fleet Registry'],
+  ['/harbors', 'Port Directory'],
+  ['/audit', 'Compliance Audit'],
+  ['/analytics', 'Performance Insights'],
+  ['/about', 'About HarborTrace SL']
 ];
 
 export default function Layout({ children }) {
@@ -21,8 +22,8 @@ export default function Layout({ children }) {
     <div className="layout">
       <header>
         <h1>HarborTrace SL</h1>
-        <p>Role: {role || 'guest'}</p>
-        <button onClick={signOut}>Sign out</button>
+        <p>Fisheries Role: {role || 'guest'}</p>
+        <button onClick={signOut}>Sign out securely</button>
       </header>
       <nav>
         {links.map(([to, label]) => (

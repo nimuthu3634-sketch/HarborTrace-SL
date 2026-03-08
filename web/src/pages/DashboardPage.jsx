@@ -1,19 +1,24 @@
+import { useEffect } from 'react';
 import { useAuth } from '../features/auth/AuthContext';
 
 const roleDescriptions = {
-  fisherman: 'Register Departure, monitor Active Voyage, submit Landing Intake and Incident Alert.',
-  harbor_officer: 'Review arrivals, verify landings, publish Harbor Notice, and respond to incidents.',
-  buyer: 'Review verified batches and perform Batch Traceability checks.',
-  admin: 'Manage harbors, users, security posture, analytics, and audit logs.'
+  fisherman: 'Start a voyage from your assigned harbor, monitor active trip status, submit landed catch details, and trigger emergency incident alerts when required.',
+  harbor_officer: 'Validate inbound vessel arrivals, verify landing declarations, issue operational harbor bulletins, and coordinate incident response actions.',
+  buyer: 'Review verified catch batches, validate traceability records, and confirm trusted seafood sourcing for procurement workflows.',
+  admin: 'Oversee ports, vessels, users, compliance controls, system analytics, and complete fisheries audit visibility.'
 };
 
 export default function DashboardPage() {
   const { role } = useAuth();
 
+  useEffect(() => {
+    document.title = 'HarborTrace SL | Fisheries Operations Dashboard';
+  }, []);
+
   return (
     <section className="card">
-      <h2>Role Dashboard</h2>
-      <p>{roleDescriptions[role] || 'No role assigned. Contact administrator.'}</p>
+      <h2>Fisheries Operations Dashboard</h2>
+      <p>{roleDescriptions[role] || 'No fisheries role assigned yet. Please contact the system administrator.'}</p>
     </section>
   );
 }

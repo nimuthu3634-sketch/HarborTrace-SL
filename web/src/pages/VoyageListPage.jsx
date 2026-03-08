@@ -71,7 +71,7 @@ export default function VoyageListPage() {
               );
             })}
             {!filteredTrips.length && (
-              <tr>
+              <tr className="empty-state-row">
                 <td colSpan={6}>No voyages found in this filter.</td>
               </tr>
             )}

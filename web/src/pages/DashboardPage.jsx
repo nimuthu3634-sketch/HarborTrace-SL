@@ -377,7 +377,7 @@ export default function DashboardPage() {
                 <span>{formatTimestamp(entry.createdAt)}</span>
               </li>
             ))}
-            {!adminActivity.audits.length && <li>No recent audit events recorded.</li>}
+            {!adminActivity.audits.length && <li className="state">No recent audit events recorded.</li>}
           </ul>
         </section>
       </section>
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                 <span>{formatTimestamp(notice.createdAt)}</span>
               </li>
             ))}
-            {!recentNotices.length && <li>No notices targeted to your role right now.</li>}
+            {!recentNotices.length && <li className="state">No notices targeted to your role right now.</li>}
           </ul>
         </div>
       </section>
@@ -483,7 +483,7 @@ export default function DashboardPage() {
                   </tr>
                 ))}
                 {!recentLandings.length && (
-                  <tr>
+                  <tr className="empty-state-row">
                     <td colSpan={5}>No landing submissions found.</td>
                   </tr>
                 )}
@@ -506,7 +506,7 @@ export default function DashboardPage() {
                 <span>{formatTimestamp(notice.createdAt)}</span>
               </li>
             ))}
-            {!recentNotices.length && <li>No operational notices published yet.</li>}
+            {!recentNotices.length && <li className="state">No operational notices published yet.</li>}
           </ul>
         </article>
       </section>

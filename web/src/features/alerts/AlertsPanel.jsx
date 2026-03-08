@@ -131,7 +131,7 @@ export default function AlertsPanel() {
     <section>
       <h3>SOS / Incident Alert</h3>
       {role === 'fisherman' && (
-        <form onSubmit={submitAlert}>
+        <form onSubmit={submitAlert} className="landing-form">
           <label htmlFor="alertType">Alert type</label>
           <select id="alertType" name="alertType" value={form.alertType} onChange={onChange}>
             {alertTypeOptions.map((option) => (
@@ -172,7 +172,7 @@ export default function AlertsPanel() {
           <button type="submit" disabled={!canSubmit || state.loading}>Send SOS alert</button>
           {activeTrips.length === 0 && <p className="error">No active trips available. Start an active trip before sending an SOS.</p>}
           {state.error && <p className="error">{state.error}</p>}
-          {state.success && <p>{state.success}</p>}
+          {state.success && <p className="status-message">{state.success}</p>}
         </form>
       )}
 
@@ -216,7 +216,7 @@ export default function AlertsPanel() {
               </tr>
             ))}
             {alerts.length === 0 && (
-              <tr>
+              <tr className="empty-state-row">
                 <td colSpan={role === 'harbor_officer' || role === 'admin' ? 8 : 7}>No incidents recorded yet.</td>
               </tr>
             )}

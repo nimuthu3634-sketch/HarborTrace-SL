@@ -70,7 +70,7 @@ export default function BatchVerifyPage() {
           <p><strong>Verification Status:</strong> {result.verificationStatus || '—'}</p>
         </div>
       )}
-      {searched && !result && <p>No verified seafood batch found yet.</p>}
+      {searched && !result && <p className="state">No verified seafood batch found yet.</p>}
     </section>
   );
 }

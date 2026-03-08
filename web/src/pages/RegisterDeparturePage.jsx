@@ -68,7 +68,9 @@ export default function RegisterDeparturePage() {
   return (
     <section className="card">
       <h2>Register Departure</h2>
+      <p className="helper-text">Provide complete departure and return planning details before leaving harbor.</p>
       <form onSubmit={onSubmit}>
+        <div className="form-grid">
         <label htmlFor="vesselId">Vessel</label>
         <select id="vesselId" name="vesselId" value={form.vesselId} onChange={onChange} required>
           <option value="">Select vessel</option>
@@ -98,9 +100,13 @@ export default function RegisterDeparturePage() {
 
         <label htmlFor="notes">Notes</label>
         <textarea id="notes" name="notes" value={form.notes} onChange={onChange} rows={4} />
+        </div>
 
         {error && <p className="error">{error}</p>}
-        <button type="submit" disabled={saving || !canSubmit}>{saving ? 'Registering…' : 'Register Departure'}</button>
+        <div className="form-actions">
+          <button type="submit" disabled={saving || !canSubmit}>{saving ? 'Registering…' : 'Register Departure'}</button>
+          <p className="helper-text">All required fields must be completed before submission.</p>
+        </div>
       </form>
     </section>
   );

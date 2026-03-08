@@ -180,13 +180,34 @@ service cloud.firestore {
 
       allow create: if isFisherman()
                     && request.resource.data.fishermanUid == request.auth.uid
-                    && request.resource.data.submissionStatus in ['draft', 'submitted'];
+                    && request.resource.data.submittedByUid == request.auth.uid
+                    && request.resource.data.verificationStatus == 'pending'
+                    && request.resource.data.verifiedByOfficerUid == null
+                    && request.resource.data.verifiedAt == null
+                    && hasOnlyKeys([
+                      'tripId',
+                      'fishType',
+                      'quantity',
+                      'totalWeightKg',
+                      'storageMethod',
+                      'conditionStatus',
+                      'landingHarborId',
+                      'landingTime',
+                      'verificationStatus',
+                      'fishermanUid',
+                      'submittedByUid',
+                      'verifiedByOfficerUid',
+                      'verifiedAt',
+                      'createdAt',
+                      'updatedAt'
+                    ]);
 
       allow update: if signedIn() && (
         // Fisherman may revise own submission, not protected verification fields.
         (isFisherman()
           && resource.data.fishermanUid == request.auth.uid
           && request.resource.data.fishermanUid == resource.data.fishermanUid
+          && request.resource.data.submittedByUid == resource.data.submittedByUid
           && unchanged('verificationStatus')
           && unchanged('verifiedByOfficerUid')
           && unchanged('verifiedAt'))

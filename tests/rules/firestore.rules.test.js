@@ -146,6 +146,33 @@ describe('Firestore security rules', () => {
     const fisherDb = testEnv.authenticatedContext('fish1').firestore();
     await assertFails(updateDoc(doc(fisherDb, 'trips', 'tripProtected'), { vesselId: 'v9' }));
   });
+
+  it('allows fisherman to create landing only for themselves with pending verification defaults', async () => {
+    const fisherDb = testEnv.authenticatedContext('fish1').firestore();
+    const payload = {
+      tripId: 'trip1',
+      fishType: 'Tuna',
+      quantity: 40,
+      totalWeightKg: 200,
+      storageMethod: 'iced',
+      conditionStatus: 'fresh',
+      landingHarborId: 'harbor-1',
+      landingTime: new Date(),
+      verificationStatus: 'pending',
+      fishermanUid: 'fish1',
+      submittedByUid: 'fish1',
+      verifiedByOfficerUid: null,
+      verifiedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await assertSucceeds(setDoc(doc(fisherDb, 'landings', 'landingOwn'), payload));
+    await assertFails(setDoc(doc(fisherDb, 'landings', 'landingOtherOwner'), { ...payload, fishermanUid: 'fish2' }));
+    await assertFails(setDoc(doc(fisherDb, 'landings', 'landingWrongStatus'), { ...payload, verificationStatus: 'verified' }));
+  });
+
+
   it('blocks fisherman from writing protected verification fields', async () => {
     await seedDoc('landings', 'landing1', {
       fishermanUid: 'fish1',

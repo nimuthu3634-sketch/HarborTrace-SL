@@ -6,7 +6,6 @@ import AuditPanel from '../features/audit/AuditPanel';
 import { AuthProvider } from '../features/auth/AuthContext';
 import BatchesPanel from '../features/batches/BatchesPanel';
 import HarborsPanel from '../features/harbors/HarborsPanel';
-import LandingsPanel from '../features/landings/LandingsPanel';
 import NoticesPanel from '../features/notices/NoticesPanel';
 import VesselsPanel from '../features/vessels/VesselsPanel';
 import ProtectedRoute from './ProtectedRoute';
@@ -19,6 +18,9 @@ import UnauthorizedPage from '../pages/UnauthorizedPage';
 import RegisterDeparturePage from '../pages/RegisterDeparturePage';
 import VoyageDetailPage from '../pages/VoyageDetailPage';
 import VoyageListPage from '../pages/VoyageListPage';
+import LandingDetailPage from '../pages/LandingDetailPage';
+import LandingIntakePage from '../pages/LandingIntakePage';
+import MyLandingsPage from '../pages/MyLandingsPage';
 
 function AppRoutes() {
   return (
@@ -44,7 +46,9 @@ function AppRoutes() {
                 <Route path="/trips/register" element={<ProtectedRoute allowedRoles={['fisherman']}><RegisterDeparturePage /></ProtectedRoute>} />
                 <Route path="/trips/:tripId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><VoyageDetailPage /></ProtectedRoute>} />
                 <Route path="/alerts" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fisher Safety & Incident Alerts"><AlertsPanel /></FeaturePage></ProtectedRoute>} />
-                <Route path="/landings" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Catch Landing Intake & Verification"><LandingsPanel /></FeaturePage></ProtectedRoute>} />
+                <Route path="/landings" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Catch Landing Intake & Verification"><MyLandingsPage /></FeaturePage></ProtectedRoute>} />
+                <Route path="/landings/new" element={<ProtectedRoute allowedRoles={['fisherman']}><FeaturePage title="Landing Intake Form"><LandingIntakePage /></FeaturePage></ProtectedRoute>} />
+                <Route path="/landings/:landingId" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Landing Intake Detail"><LandingDetailPage /></FeaturePage></ProtectedRoute>} />
                 <Route path="/batches" element={<ProtectedRoute allowedRoles={['buyer', 'harbor_officer', 'admin']}><FeaturePage title="Catch Batch Traceability"><BatchesPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/notices" element={<ProtectedRoute allowedRoles={['harbor_officer', 'admin']}><FeaturePage title="Harbor Operations Bulletins"><NoticesPanel /></FeaturePage></ProtectedRoute>} />
                 <Route path="/vessels" element={<ProtectedRoute allowedRoles={['fisherman', 'harbor_officer', 'admin']}><FeaturePage title="Fishing Vessel Registry"><VesselsPanel /></FeaturePage></ProtectedRoute>} />

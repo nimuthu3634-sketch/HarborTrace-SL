@@ -235,7 +235,6 @@ service cloud.firestore {
         isAdmin()
         || isOfficer()
         || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
-        || (isBuyer() && resource.data.buyerSafe == true)
       );
 
       allow create, update: if isAdmin() || isOfficer();
@@ -247,7 +246,6 @@ service cloud.firestore {
         isAdmin()
         || isOfficer()
         || (isFisherman() && resource.data.fishermanUid == request.auth.uid)
-        || (isBuyer() && resource.data.buyerVisibleStatus == 'visible')
       );
 
       allow create, update: if isAdmin() || isOfficer();

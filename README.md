@@ -1,185 +1,330 @@
 # HarborTrace SL
 
-HarborTrace SL is a secure fisheries operations platform for Sri Lanka, covering departure registration, active voyage monitoring, incident alerts, landing intake verification, and end-to-end batch traceability.
+HarborTrace SL is a **Firebase-powered fisheries operations and traceability platform** designed for Sri Lanka. It supports the full operational lifecycle from trip departure registration, active-voyage monitoring, and emergency alerting to landing verification and buyer-facing batch traceability.
 
-## Monorepo structure
+This repository is structured as a final-year university project monorepo, with a production-style architecture suitable for technical demonstrations.
 
-- `web/` React + Vite application.
-- `functions/` TypeScript Cloud Functions for Firebase.
-- `firestore.rules` Firestore security rules.
-- `firestore.indexes.json` Firestore composite indexes.
-- `firebase.json` Firebase project + emulator configuration.
-- `tests/rules/` Firestore security rules tests.
-- `tests/emulator/` end-to-end callable tests against the local Emulator Suite.
+## Project overview
 
-## Firebase setup
+### Problem statement
+Fishing operations involve multiple actors (fishermen, harbor officers, buyers, and regulators), but records are often fragmented across paper forms, calls, and disconnected systems. This creates delays in:
+- safety response,
+- landing verification,
+- traceability for buyers,
+- and audit/compliance reviews.
 
-### 1) Install dependencies
+### Project goal
+HarborTrace SL centralizes these workflows into a role-based digital platform with:
+- authenticated access,
+- secure Firestore data controls,
+- trusted backend workflows via Cloud Functions,
+- and auditable operations for governance.
 
-From repository root:
+## User roles
+
+HarborTrace SL currently supports 4 application roles:
+
+- **fisherman**
+  - register trips,
+  - submit emergency alerts,
+  - submit landing intake data,
+  - view own operational records.
+- **harbor_officer**
+  - monitor trips and alerts,
+  - verify landing intakes,
+  - manage notices,
+  - support vessel/harbor operations.
+- **buyer**
+  - access buyer-safe, verified batch traceability information.
+- **admin**
+  - full governance visibility,
+  - role-sensitive administration,
+  - audit and analytics access.
+
+## Main modules
+
+### Frontend modules (`web/`)
+
+Feature and page modules include:
+- Authentication and session profile handling
+- Trips (registration, active/overdue monitoring, details)
+- Emergency alerts
+- Landings (submission and verification views)
+- Batch traceability and verification
+- Notices
+- Vessels
+- Harbors
+- Audit (admin)
+- Analytics (admin)
+
+### Backend modules (`functions/`)
+
+Cloud Functions are organized by domain:
+- `users`
+- `trips`
+- `landing`
+- `traceability`
+- `alerts`
+- `notices`
+- `auth`
+- `vessels`
+- `harbors`
+
+Each domain encapsulates callable endpoints and shared validation/audit utilities.
+
+## Firebase architecture
+
+HarborTrace SL uses a layered Firebase architecture:
+
+1. **Frontend (React + Firebase Client SDK)**
+   - Firebase Auth for user sign-in,
+   - Firestore reads/writes for role-scoped data,
+   - callable Functions invocation for trusted operations.
+
+2. **Cloud Functions for Firebase (TypeScript)**
+   - business-critical workflows (verification, status transitions, batch generation),
+   - server-side authorization checks,
+   - centralized audit logging.
+
+3. **Cloud Firestore**
+   - operational data store for users, trips, alerts, landings, batches, notices, and audit logs.
+
+4. **Firestore Security Rules**
+   - enforce least privilege and ownership constraints,
+   - prevent role escalation from clients,
+   - reserve sensitive writes for trusted server paths.
+
+5. **Firebase Emulator Suite**
+   - local Auth + Firestore + Functions integration,
+   - rules testing and callable workflow testing.
+
+## Firestore collections
+
+Primary collections used by the current implementation:
+
+- `users` – identity profile + role mapping
+- `vessels` – vessel registration/ownership data
+- `harbors` – harbor metadata
+- `trips` – departure and trip lifecycle data
+- `emergencyAlerts` – SOS/incident alerts
+- `landings` – catch landing submissions + verification state
+- `batches` and/or `fishBatches` – traceability records (buyer-safe view where applicable)
+- `batchPublicVerifications` – public read-only verification payloads
+- `notices` – operational bulletins
+- `auditLogs` – immutable audit trail
+- `analytics` – admin analytics documents
+
+> Note: naming in some typed model docs (`catchLandings`, `fishBatches`) and active security-rules/runtime collections (`landings`, `batches`, `fishBatches`) reflects ongoing iteration typical in project development.
+
+## Cloud Functions overview
+
+Exported functions include callable APIs and one scheduled task:
+
+- **Auth/session**
+  - `getSessionProfile`
+  - `logAuthAttempt`
+- **Users**
+  - `listFishermen`
+  - `getFishermanDetail`
+  - `createFisherman`
+  - `updateFisherman`
+- **Trips**
+  - `createTrip`
+  - `transitionTripStatus`
+  - `updateOverdueTripStatuses` *(scheduled)*
+- **Landings**
+  - `submitLandingIntake`
+  - `verifyLandingIntake`
+- **Traceability**
+  - `generateBatchCode`
+- **Alerts**
+  - `submitEmergencyAlert`
+  - `updateEmergencyAlertStatus`
+- **Notices**
+  - `createNotice`
+  - `updateNotice`
+- **Vessels**
+  - `createVessel`
+  - `updateVessel`
+- **Harbors**
+  - `createHarbor`
+  - `updateHarbor`
+
+## Firestore Security Rules overview
+
+Security rules are role-aware and default-deny. Key design points:
+
+- **Central role lookup** from `users/{uid}` via helper functions.
+- **Role escalation prevention**
+  - client user creation is limited to non-elevated roles,
+  - self-updates cannot change immutable identity/role fields.
+- **Ownership checks**
+  - fishermen can only read/write their own trips/alerts/landings (where allowed).
+- **Operational controls**
+  - officers/admins can perform operational updates,
+  - sensitive collections (e.g., `auditLogs`, `analytics`) are restricted.
+- **Server-only paths for critical writes**
+  - vessel/harbor/notice writes are blocked in client rules to enforce trusted backend + audit flow.
+- **Explicit public read exception**
+  - `batchPublicVerifications` is intentionally world-readable for verification use-cases.
+
+## Local setup steps
+
+### 1) Prerequisites
+- Node.js 20+ recommended
+- npm 10+
+- Firebase CLI (`firebase-tools`)
+
+### 2) Install dependencies
+From repo root:
 
 ```bash
 npm install
 npm run install:all
 ```
 
-### 2) Configure frontend Firebase SDK env vars
-
-Copy `web/.env.example` to `web/.env.local` and fill values from **Firebase Console → Project settings → Your apps → SDK setup and configuration**.
+### 3) Configure frontend environment
 
 ```bash
 cp web/.env.example web/.env.local
 ```
 
-Required variables:
+Fill values in `web/.env.local` from Firebase Console.
 
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_APP_ID`
-
-For local emulator development, set these in `web/.env.local` too:
-
-```bash
-VITE_USE_EMULATORS=true
-VITE_FIREBASE_EMULATOR_HOST=127.0.0.1
-VITE_FIREBASE_AUTH_EMULATOR_PORT=9099
-VITE_FIRESTORE_EMULATOR_PORT=8080
-VITE_FIREBASE_FUNCTIONS_EMULATOR_PORT=5001
-```
-
-> Do not commit `.env.local` or any real secrets.
-
-### 3) Configure Firebase CLI project
+### 4) Firebase CLI project selection
 
 ```bash
 firebase login
 firebase use harbortrace-sl-dev
 ```
 
-The default project alias is already set in `.firebaserc`.
+## Emulator setup steps
 
-## Local Emulator Suite workflow (Auth + Firestore + Functions)
-
-### 1) Build Cloud Functions
-
+### 1) Build functions
 ```bash
 npm run build:functions
 ```
 
-### 2) Start emulators for local development
-
+### 2) Start local emulator suite
 ```bash
 npm run dev:emulators
 ```
 
 This starts:
+- Auth emulator on `localhost:9099`
+- Firestore emulator on `localhost:8080`
+- Functions emulator on `localhost:5001`
+- Emulator UI on `localhost:4000`
 
-- Auth Emulator: `localhost:9099`
-- Firestore Emulator: `localhost:8080`
-- Functions Emulator: `localhost:5001`
-- Emulator UI: `localhost:4000`
-
-### 3) Run frontend against emulators (separate terminal)
-
-```bash
-npm run dev:web
-```
-
-### 4) Run all local tests against Emulator Suite
-
-```bash
-npm run test:local
-```
-
-This command runs:
-
-- `npm run test:web` (auth-protected route/page logic)
-- `npm run emulator:test`, which runs:
-  - `npm run test:rules` (Firestore security rules unit tests)
-  - `npm run test:functions:emulator` (callable emulator tests)
-
-## Test coverage added for local Firebase testing
-
-- Auth-protected route/page decisions (`web/src/app/protectedRouteAccess.test.js`).
-- Firestore rules access control by role and allowed/denied operations (`tests/rules/firestore.rules.test.js`).
-- Callable flow tests against emulators (`tests/emulator/callable.emulator.test.js`) covering:
-  - trip creation,
-  - SOS submission,
-  - landing submission,
-  - landing verification via Cloud Function,
-  - batch generation.
-
-## Authentication flow (Firebase Auth + Firestore profile)
-
-HarborTrace SL uses Firebase Authentication for identity and Firestore for role/profile data.
-
-- Identity: users sign in with **email/password** via Firebase Auth.
-- Profile source of truth: role and profile metadata are stored in `users/{uid}` Firestore documents.
-- Trusted role resolution: the frontend requests session profile data through the `getSessionProfile` callable Cloud Function, which reads Firestore using Admin SDK (server-side).
-- Route protection: frontend routes are guarded by role-aware `ProtectedRoute` checks, and Firestore security rules still enforce backend authorization.
-- Auditability: login attempts are written to `auditLogs` through `logAuthAttempt` callable:
-  - `auth.login.success` when sign-in succeeds.
-  - `auth.login.failed` when sign-in fails.
-
-### Seed comprehensive demo data (Auth + Firestore)
-
-To load presentation-ready Sri Lankan demo data (users by role, harbors, vessels, trips, alerts, landings, fish batches, notices, and audit logs) into the emulators:
-
+### 3) Seed demo data (optional, recommended for demo)
 ```bash
 npm run seed:demo
 ```
 
-This script:
+## Environment variables
 
-- starts Auth + Firestore emulators for the run,
-- upserts Firebase Auth demo accounts,
-- resets and reseeds core Firestore collections with realistic linked records.
+`web/.env.example` contains required variables:
 
-Default demo password for all seeded users: `DemoPass#2026`.
+### Firebase Web SDK config
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_FUNCTIONS_REGION`
 
-### Demo / seed users (presentation mode)
+### Emulator config
+- `VITE_USE_EMULATORS`
+- `VITE_FIREBASE_EMULATOR_HOST`
+- `VITE_FIREBASE_AUTH_EMULATOR_PORT`
+- `VITE_FIRESTORE_EMULATOR_PORT`
+- `VITE_FIREBASE_FUNCTIONS_EMULATOR_PORT`
 
-For local emulator demos, create users in Firebase Auth emulator and add matching role profiles in Firestore (`users/{uid}`).
+## How to run locally
 
-Suggested demo accounts:
-
-- `fisherman.demo@harbortrace.lk` → role `fisherman`
-- `officer.demo@harbortrace.lk` → role `harbor_officer`
-- `buyer.demo@harbortrace.lk` → role `buyer`
-- `admin.demo@harbortrace.lk` → role `admin`
-
-Each profile document should include at minimum:
-
-```json
-{
-  "uid": "<firebase-auth-uid>",
-  "role": "fisherman | harbor_officer | buyer | admin",
-  "displayName": "Demo User"
-}
-```
-
-> Note: role claims from the client UI must never be treated as authoritative. Always enforce role access in Firestore rules and callable/server functions.
-
-## Firestore rules and indexes
-
-- Rules source: `firestore.rules`
-- Indexes source: `firestore.indexes.json`
-
-Deploy only rules/indexes:
-
+### Option A: Full local (recommended)
+Terminal 1:
 ```bash
-firebase deploy --only firestore:rules,firestore:indexes
+npm run dev:emulators
 ```
 
-## Validation commands
+Terminal 2:
+```bash
+npm run dev:web
+```
 
-- `npm run build:functions`
-- `npm run dev:emulators`
-- `npm run dev:web`
-- `npm run test:web`
-- `npm run test:rules`
-- `npm run test:functions:emulator`
-- `npm run test:local`
-- `npm run lint:web`
-- `npm run build:web`
+### Option B: Frontend-only build check
+```bash
+npm run build:web
+```
+
+## How to run tests
+
+### Frontend route guard test
+```bash
+npm run test:web
+```
+
+### Firestore rules tests
+```bash
+npm run test:rules
+```
+
+### Callable Cloud Functions emulator tests
+```bash
+npm run test:functions:emulator
+```
+
+### Full local test pipeline
+```bash
+npm run test:local
+```
+
+## Demo credentials
+
+After running `npm run seed:demo`, use the following accounts:
+
+- `admin.demo@harbortrace.lk` / `DemoPass#2026`
+- `officer.colombo@harbortrace.lk` / `DemoPass#2026`
+- `officer.galle@harbortrace.lk` / `DemoPass#2026`
+- `fisher.kalpitiya@harbortrace.lk` / `DemoPass#2026`
+- `fisher.negombo@harbortrace.lk` / `DemoPass#2026`
+- `fisher.trinco@harbortrace.lk` / `DemoPass#2026`
+- `buyer.demo@harbortrace.lk` / `DemoPass#2026`
+
+> Use demo credentials only in local emulator/testing environments.
+
+## Security features
+
+- Firebase Authentication (email/password)
+- Role-based access control through Firestore profile mapping
+- Firestore Security Rules with ownership and immutable-field constraints
+- Default-deny fallback rules for unknown paths
+- Trusted operations delegated to Cloud Functions (not client writes)
+- Audit logging for high-value actions (including auth events and operational updates)
+- Public verification data isolated to dedicated read-only collection
+
+## Known limitations
+
+- Some collection naming is still being consolidated (`landings` vs `catchLandings`, `batches` vs `fishBatches`).
+- Current automated tests focus on representative flows (route guards, rules checks, key callable flows) rather than exhaustive end-to-end UI coverage.
+- Observability is basic (console/emulator-centric) and does not yet include production monitoring dashboards.
+- Fine-grained performance optimization (query tuning at scale, pagination strategy) is still in progress.
+
+## Future improvements
+
+- Consolidate and migrate all collection naming into one final schema contract.
+- Add stronger CI/CD quality gates (lint + tests + rules validation + deploy checks).
+- Expand end-to-end test automation (multi-role UI and cross-module workflows).
+- Integrate production-grade monitoring/alerting and error tracking.
+- Add multilingual UX support and accessibility refinements for broader field adoption.
+- Introduce richer analytics and predictive safety insights (e.g., risk forecasting).
+- Harden secure public traceability pages with anti-abuse controls and rate limiting.
+
+---
+
+For architecture references, see:
+- `docs/architecture.md`
+- `docs/firebase-architecture.md`
+- `docs/firestore-data-model.md`

@@ -1,6 +1,6 @@
 import { doc, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { db, functions } from '../lib/firebase';
 import { formatTimestamp } from '../features/trips/tripStatus';
@@ -11,6 +11,7 @@ export default function VesselDetailPage() {
   const { vesselId = '' } = useParams();
   const [vessel, setVessel] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [state, setState] = useState({ loading: false, error: '', success: '' });
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function VesselDetailPage() {
     }
 
     return onSnapshot(doc(db, 'vessels', vesselId), (snapshot) => {
+      setHasLoaded(true);
       if (!snapshot.exists()) {
         setVessel(null);
         setDraft(null);
@@ -38,12 +40,27 @@ export default function VesselDetailPage() {
     });
   }, [vesselId]);
 
-  const detailRows = useMemo(() => {
-    if (!vessel) {
-      return [];
-    }
+  if (!vesselId) {
+    return (
+      <section className="card">
+        <h2>Vessel Detail</h2>
+        <p>Missing vessel ID in route.</p>
+        <Link to="/vessels">Back to vessels</Link>
+      </section>
+    );
+  }
 
-    return [
+  if (!hasLoaded) {
+    return (
+      <section className="card">
+        <h2>Vessel Detail</h2>
+        <p>Loading vessel record…</p>
+      </section>
+    );
+  }
+
+  const detailRows = vessel
+    ? [
       ['Vessel Name', vessel.vesselName],
       ['Registration Number', vessel.registrationNumber],
       ['Owner User ID', vessel.ownerUserId],
@@ -52,8 +69,8 @@ export default function VesselDetailPage() {
       ['Status', vessel.status],
       ['Created At', formatTimestamp(vessel.createdAt)],
       ['Updated At', formatTimestamp(vessel.updatedAt)]
-    ];
-  }, [vessel]);
+    ]
+    : [];
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -88,7 +105,7 @@ export default function VesselDetailPage() {
     return (
       <section className="card">
         <h2>Vessel Detail</h2>
-        <p>Vessel not found.</p>
+        <p>Vessel not found or you no longer have access.</p>
         <Link to="/vessels">Back to vessels</Link>
       </section>
     );

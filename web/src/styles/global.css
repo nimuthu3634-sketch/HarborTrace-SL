@@ -478,9 +478,9 @@ th {
 .language-switcher {
   display: inline-flex;
   align-items: center;
-  gap: .24rem;
-  margin-bottom: .25rem;
-  padding: .22rem .34rem;
+  gap: .16rem;
+  margin-bottom: .2rem;
+  padding: .2rem .3rem;
   border-radius: .65rem;
   background: #f2f4f8;
 }
@@ -502,25 +502,28 @@ th {
 .language-switcher-options {
   display: inline-flex;
   align-items: center;
-  gap: .08rem;
+  gap: .06rem;
 }
 
 .language-switcher-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
   width: auto;
   border: 0;
-  border-radius: .45rem;
+  border-radius: .38rem;
   background: transparent;
-  color: #7d7f90;
+  color: #939aaa;
   font-size: .76rem;
   font-weight: 500;
-  line-height: 1.1;
+  line-height: 1;
   letter-spacing: .01em;
-  padding: .32rem .42rem;
+  padding: .28rem .38rem;
 }
 
 .language-switcher-option:hover {
-  color: #5d6070;
+  color: #6f7789;
 }
 
 .language-switcher-option:focus-visible {
@@ -529,17 +532,16 @@ th {
 }
 
 .language-switcher-option.is-active {
-  background: #323743;
+  background: #2a2f3b;
   color: #fff;
   font-weight: 600;
-  padding-top: .36rem;
-  padding-bottom: .36rem;
+  padding: .26rem .36rem;
 }
 
 @media (max-width: 640px) {
   .language-switcher {
-    padding: .1rem .24rem;
-    gap: .24rem;
+    padding: .1rem .2rem;
+    gap: .16rem;
   }
 
   .language-switcher-option {

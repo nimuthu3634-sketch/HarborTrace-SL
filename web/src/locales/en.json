@@ -5,7 +5,11 @@
   "genericUser": "User",
   "signOut": "Sign out securely",
   "language": "Language",
-  "languages": {"en": "English", "si": "සිංහල", "ta": "தமிழ்"},
+  "languages": {
+    "en": "English",
+    "si": "සිංහල",
+    "ta": "தமிழ்"
+  },
   "login": {
     "title": "HarborTrace SL Access",
     "subtitle": "Sign in with your institutional account to access secure fisheries workflows.",
@@ -28,7 +32,14 @@
     "analytics": "Performance Insights",
     "about": "About HarborTrace SL"
   },
-  "roles": {"fisherman": "Fisherman", "harbor_officer": "Harbor Officer", "buyer": "Buyer", "admin": "Admin", "all": "All roles", "unassigned": "Unassigned"},
+  "roles": {
+    "fisherman": "Fisherman",
+    "harbor_officer": "Harbor Officer",
+    "buyer": "Buyer",
+    "admin": "Admin",
+    "all": "All roles",
+    "unassigned": "Unassigned"
+  },
   "common": {
     "loading": "Loading...",
     "createdAt": "Created at",
@@ -56,7 +67,41 @@
     "viewOnly": "You can view notices targeted for your role.",
     "none": "No notices available for this role.",
     "updated": "Updated notice {{id}}.",
-    "fields": {"title": "Title", "body": "Body", "targetRole": "Target role"},
-    "table": {"title": "Title", "severity": "Severity", "audience": "Audience", "createdBy": "Created by", "createdAt": "Created at", "details": "Details", "edit": "Edit"}
+    "fields": {
+      "title": "Title",
+      "body": "Body",
+      "targetRole": "Target role"
+    },
+    "table": {
+      "title": "Title",
+      "severity": "Severity",
+      "audience": "Audience",
+      "createdBy": "Created by",
+      "createdAt": "Created at",
+      "details": "Details",
+      "edit": "Edit"
+    }
+  },
+  "landingIntake": {
+    "title": "Landing intake form",
+    "description": "Record your landed catch with complete trip and handling details. Verification status is set to pending automatically.",
+    "fields": {
+      "tripId": "Trip ID",
+      "fishType": "Fish type",
+      "quantity": "Quantity",
+      "totalWeightKg": "Total weight (kg)",
+      "storageMethod": "Storage method",
+      "conditionStatus": "Condition status",
+      "landingHarborId": "Landing harbor ID",
+      "landingTime": "Landing time"
+    },
+    "actions": {
+      "submit": "Submit landing intake",
+      "submitting": "Submitting..."
+    },
+    "helper": "Make sure the trip ID and harbor ID match your registered voyage.",
+    "messages": {
+      "submitFailed": "Failed to submit landing intake."
+    }
   }
 }

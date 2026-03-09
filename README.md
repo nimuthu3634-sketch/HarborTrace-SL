@@ -2,9 +2,13 @@
 
 **HarborTrace SL** is a secure fisheries operations and traceability platform developed for the Sri Lankan fisheries context. It digitizes the operational lifecycle from trip registration and SOS reporting to landing verification and buyer-facing batch traceability.
 
+
+This repository is a **final-year university project monorepo** that follows a production-style architecture for technical demonstrations, supervision reviews, and portfolio presentation.
+
 This repository is structured as a **final-year university project monorepo** with production-style Firebase architecture, role-based access control, multilingual UI, and emulator-driven testing.
 
----
+
+
 
 ## Project Overview
 
@@ -17,8 +21,67 @@ In many fisheries workflows, critical data is still fragmented across paper form
 - traceability assurance for buyers,
 - and audit/compliance reviews.
 
+
+### Project goal
+HarborTrace SL centralizes these workflows into a role-based digital platform with:
+- authenticated access,
+- secure Firebase/Firestore data controls,
+- trusted backend workflows via Cloud Functions,
+- and auditable operations for governance.
+
+## User roles
+
+HarborTrace SL currently supports 4 application roles:
+
+- **fisherman**
+  - register trips,
+  - submit emergency alerts,
+  - submit landing intake data,
+  - view own operational records.
+- **harbor_officer**
+  - monitor trips and alerts,
+  - verify landing intakes,
+  - manage notices,
+  - support vessel/harbor operations.
+- **buyer**
+  - access buyer-safe, verified batch traceability information.
+- **admin**
+  - full governance visibility,
+  - role-sensitive administration,
+  - audit and analytics access.
+
+## Main modules
+
+### Frontend modules (`web/`)
+
+Feature and page modules include:
+- Authentication and session profile handling
+- Trips (registration, active/overdue monitoring, details)
+- Emergency alerts
+- Landings (submission and verification views)
+- Batch traceability and verification
+- Notices
+- Vessels
+- Harbors
+- Audit (admin)
+- Analytics (admin)
+
+### Backend modules (`functions/`)
+
+Cloud Functions are organized by domain:
+- `users`
+- `trips`
+- `landing`
+- `traceability`
+- `alerts`
+- `notices`
+- `auth`
+- `vessels`
+- `harbors`
+
 ### Proposed Solution
 HarborTrace SL provides a unified, role-aware platform that combines:
+
 
 - secure sign-in and user identity management,
 - operational modules for trips, alerts, and landing intake,
@@ -61,7 +124,7 @@ Each role sees a tailored dashboard and only the workflows they are authorized t
 - Audit logging for high-value operations
 - Admin-only audit and analytics views
 
----
+
 
 ## System Modules
 
@@ -90,9 +153,15 @@ Each role sees a tailored dashboard and only the workflows they are authorized t
 - `vessels` – trusted vessel create/update
 - `harbors` – trusted harbor create/update
 
----
+
+### Why Firebase was chosen
+
+Firebase was selected because it provides an integrated stack for authentication, serverless backend workflows, document storage, and local emulation. For a final-year project, this reduces infrastructure overhead while still allowing production-style security controls, role-based access patterns, and auditable workflows.
+
+## Firestore collections
 
 ## Multilingual Support
+
 
 The frontend supports:
 
@@ -127,7 +196,7 @@ Notices support localized fields (`titleEn/titleSi/titleTa`, `bodyEn/bodySi/body
 - **Testing:** Vitest, Firebase Rules Unit Testing, Emulator integration tests
 - **Tooling:** Firebase CLI, npm workspaces
 
----
+
 
 ## Firebase Architecture
 
@@ -155,7 +224,7 @@ HarborTrace SL uses a layered Firebase model:
    - Local Auth, Firestore, Functions, and Emulator UI
    - Reproducible demo/testing environment
 
----
+
 
 ## Firestore Collections Overview
 
@@ -175,7 +244,7 @@ Primary collections used in this repository:
 
 > Note: `firestore.rules` currently includes both `batches` and `fishBatches` read/write rules for compatibility, while core backend flows generate records in `fishBatches`.
 
----
+
 
 ## Cloud Functions Overview
 
@@ -217,16 +286,26 @@ HarborTrace SL includes multiple security controls:
 - **Firestore Security Rules** enforcing default deny, ownership checks, immutable fields, and anti-role-escalation controls.
 - **Sensitive metadata sanitization** in audit logging to redact keys such as password/token/secret-like fields.
 
----
+
 
 ## User Roles and Permissions
 
 ### Fisherman
 
+
+If `harbortrace-sl-dev` is not available in your Firebase account, set your own project alias:
+
+```bash
+firebase use --add
+```
+
+## Emulator setup steps
+
 - Register own trips
 - Submit SOS alerts against active trips
 - Submit own landing intake records
 - View own operations and general notices
+
 
 ### Harbor Officer
 
@@ -248,7 +327,7 @@ HarborTrace SL includes multiple security controls:
 - Access audit and analytics modules
 - Manage users and operational entities through trusted paths
 
----
+
 
 ## Project Structure
 
@@ -270,7 +349,7 @@ HarborTrace-SL/
 └─ package.json              # workspace scripts
 ```
 
----
+
 
 ## Setup Prerequisites
 
@@ -285,7 +364,7 @@ npm install
 npm run install:all
 ```
 
----
+
 
 ## Environment Variables
 
@@ -296,6 +375,11 @@ Create from template:
 ```bash
 cp web/.env.example web/.env.local
 ```
+
+
+> Run this while the emulator suite is running, so seed data is written to the local emulators (not to a live Firebase project).
+
+## Environment variables
 
 Required Firebase Web SDK keys:
 
@@ -322,7 +406,7 @@ Emulator keys:
 
 An optional template exists at `functions/.env.example` for future external API or secret configuration.
 
----
+
 
 ## Firebase Configuration
 
@@ -344,7 +428,6 @@ firebase login
 firebase use harbortrace-sl-dev
 ```
 
----
 
 ## Running the App Locally
 
@@ -366,7 +449,7 @@ Optional build check:
 npm run build:web
 ```
 
----
+
 
 ## Running Firebase Emulator Suite
 
@@ -421,9 +504,14 @@ Run emulator-backed test pipeline:
 npm run emulator:test
 ```
 
----
+
+> This command builds Functions, starts emulators in an isolated run, and executes rules + callable tests.
+
+## Demo credentials
+
 
 ## Demo Credentials
+
 
 After seeding demo data, use these local emulator credentials:
 
@@ -452,11 +540,28 @@ Use these accounts only in local development/emulator environments.
 5. **Governance and Oversight (Admin)**
    - Admin monitors audit logs and analytics views.
 
----
+
 
 ## Screens / UI Summary
 
 The web app includes role-aware pages for:
+
+
+- Consolidate and migrate all collection naming into one final schema contract.
+- Add stronger CI/CD quality gates (lint + tests + rules validation + deploy checks).
+- Expand end-to-end test automation (multi-role UI and cross-module workflows).
+- Integrate production-grade monitoring/alerting and error tracking.
+- Expand multilingual UX and accessibility refinements for broader field adoption.
+- Introduce richer analytics and predictive safety insights (e.g., risk forecasting).
+- Harden secure public traceability pages with anti-abuse controls and rate limiting.
+
+
+
+## Localization (en / si / ta)
+
+HarborTrace SL supports a multilingual user experience for Sri Lankan field operations, with interfaces and notices available in English, Sinhala, and Tamil.
+
+The `web/` application uses a React context-based i18n provider (`I18nProvider`) with resource files under `web/src/locales/`.
 
 - Login and unauthorized handling
 - Operations dashboard
@@ -468,7 +573,7 @@ The web app includes role-aware pages for:
 - Vessel and harbor detail screens
 - Admin audit and analytics panels
 
----
+
 
 ## Known Limitations
 
@@ -477,7 +582,7 @@ The web app includes role-aware pages for:
 - Automated tests cover core security and callable flows but not full end-to-end browser automation.
 - Observability is currently emulator/developer-focused (no production monitoring stack committed in this repo).
 
----
+
 
 ## Future Improvements
 
@@ -488,7 +593,7 @@ The web app includes role-aware pages for:
 - Improve accessibility and multilingual UX depth for field operations.
 - Introduce richer analytics and predictive safety insights.
 
----
+
 
 ## Final-Year Project Summary / Academic Relevance
 
@@ -501,13 +606,13 @@ HarborTrace SL is academically relevant as a final-year project because it combi
 
 The project demonstrates both implementation depth and security-conscious design suitable for technical panel evaluation.
 
----
+
 
 ## Contributors
 
 This repository does not currently include a formal contributor roster. Add team member names/roles here for final submission.
 
----
+
 
 ## License
 
@@ -521,4 +626,15 @@ A license file is not currently present in this repository. Add a project licens
 - `docs/firebase-architecture.md`
 - `docs/firestore-data-model.md`
 
+
+English values are mandatory and act as fallback. UI renderers select locale-specific fields first and fallback to English.
+
+
+
+For architecture references, see:
+- `docs/architecture.md`
+- `docs/firebase-architecture.md`
+- `docs/firestore-data-model.md`
+
 > These documents are useful as supplementary notes, but the source of truth for current behavior is the implemented code under `web/`, `functions/`, `tests/`, and root Firebase configuration files.
+

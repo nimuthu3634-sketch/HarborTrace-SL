@@ -13,6 +13,18 @@ describe('getProtectedRouteDecision', () => {
     expect(decision).toBe('login');
   });
 
+
+  it('denies authenticated users when role profile is missing', () => {
+    const decision = getProtectedRouteDecision({
+      user: { uid: 'u-1' },
+      role: null,
+      loading: false,
+      allowedRoles: ['fisherman', 'admin']
+    });
+
+    expect(decision).toBe('unauthorized');
+  });
+
   it('denies authenticated users missing required role', () => {
     const decision = getProtectedRouteDecision({
       user: { uid: 'u-1' },

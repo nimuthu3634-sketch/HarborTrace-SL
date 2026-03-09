@@ -6,7 +6,7 @@ export const COLLECTIONS = {
   harbors: 'harbors',
   trips: 'trips',
   emergencyAlerts: 'emergencyAlerts',
-  catchLandings: 'catchLandings',
+  landings: 'landings',
   fishBatches: 'fishBatches',
   notices: 'notices',
   auditLogs: 'auditLogs',
@@ -14,16 +14,11 @@ export const COLLECTIONS = {
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
 
-export type TripStatus =
-  | 'registered'
-  | 'active'
-  | 'overdue'
-  | 'returned'
-  | 'cancelled';
+export type TripStatus = 'planned' | 'active' | 'completed' | 'overdue' | 'emergency';
 
 export type VerificationStatus = 'pending' | 'verified' | 'rejected';
 
-export type AlertStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
+export type AlertStatus = 'pending' | 'acknowledged' | 'resolved';
 
 export type NoticeStatus = 'draft' | 'published' | 'archived';
 
@@ -96,7 +91,7 @@ export interface EmergencyAlertDocument extends TimestampFields {
   tripStatus: TripStatus;
 }
 
-export interface CatchLandingDocument extends TimestampFields {
+export interface LandingDocument extends TimestampFields {
   landingNumber: string;
   tripId: string;
   harborId: string;
@@ -161,7 +156,7 @@ export const docPath = {
   harbor: (harborId: string) => `${COLLECTIONS.harbors}/${harborId}`,
   trip: (tripId: string) => `${COLLECTIONS.trips}/${tripId}`,
   emergencyAlert: (alertId: string) => `${COLLECTIONS.emergencyAlerts}/${alertId}`,
-  catchLanding: (landingId: string) => `${COLLECTIONS.catchLandings}/${landingId}`,
+  landing: (landingId: string) => `${COLLECTIONS.landings}/${landingId}`,
   fishBatch: (batchId: string) => `${COLLECTIONS.fishBatches}/${batchId}`,
   notice: (noticeId: string) => `${COLLECTIONS.notices}/${noticeId}`,
   auditLog: (logId: string) => `${COLLECTIONS.auditLogs}/${logId}`,

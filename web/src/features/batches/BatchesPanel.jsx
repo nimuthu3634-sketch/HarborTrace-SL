@@ -14,18 +14,33 @@ export default function BatchesPanel() {
   const [searchResult, setSearchResult] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [recentBatches, setRecentBatches] = useState([]);
+  const [recentBatchesLoading, setRecentBatchesLoading] = useState(true);
+  const [recentBatchesError, setRecentBatchesError] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     const recentQuery = query(collection(db, 'batchPublicVerifications'), limit(12));
-    return onSnapshot(recentQuery, (snapshot) => {
-      setRecentBatches(snapshot.docs.map((batch) => ({ id: batch.id, ...batch.data() })));
-    });
+    const unsubscribe = onSnapshot(
+      recentQuery,
+      (snapshot) => {
+        setRecentBatches(snapshot.docs.map((batch) => ({ id: batch.id, ...batch.data() })));
+        setRecentBatchesError('');
+        setRecentBatchesLoading(false);
+      },
+      () => {
+        setRecentBatchesError('Unable to load recent verified batches right now.');
+        setRecentBatchesLoading(false);
+      }
+    );
+
+    return unsubscribe;
   }, []);
 
   const onSearch = async (event) => {
     event.preventDefault();
     const normalized = normalizeBatchCode(batchCode);
     setSearchedCode(normalized);
+    setSearchError('');
 
     if (!normalized) {
       setSearchResult(null);
@@ -33,9 +48,15 @@ export default function BatchesPanel() {
     }
 
     setIsSearching(true);
-    const snapshot = await getDoc(doc(db, 'batchPublicVerifications', normalized));
-    setSearchResult(snapshot.exists() ? snapshot.data() : null);
-    setIsSearching(false);
+    try {
+      const snapshot = await getDoc(doc(db, 'batchPublicVerifications', normalized));
+      setSearchResult(snapshot.exists() ? snapshot.data() : null);
+    } catch {
+      setSearchResult(null);
+      setSearchError('Unable to search by batch code right now. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const recentRows = recentBatches
@@ -66,6 +87,8 @@ export default function BatchesPanel() {
             QR scan integration hook is prepared. Use this input as the target for scanner output in a future release.
           </p>
         </form>
+
+        {searchError && <p className="state">{searchError}</p>}
 
         {searchedCode && (
           <div className="buyer-search-result">
@@ -111,7 +134,17 @@ export default function BatchesPanel() {
                   </td>
                 </tr>
               ))}
-              {!recentRows.length && (
+              {recentBatchesLoading && (
+                <tr>
+                  <td colSpan={5}>Loading recent buyer batches...</td>
+                </tr>
+              )}
+              {!recentBatchesLoading && recentBatchesError && (
+                <tr>
+                  <td colSpan={5}>{recentBatchesError}</td>
+                </tr>
+              )}
+              {!recentBatchesLoading && !recentBatchesError && !recentRows.length && (
                 <tr>
                   <td colSpan={5}>No verified buyer batches are available yet.</td>
                 </tr>

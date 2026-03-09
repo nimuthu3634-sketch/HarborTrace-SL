@@ -108,13 +108,34 @@ Primary collections used by the current implementation:
 - `trips` – departure and trip lifecycle data
 - `emergencyAlerts` – SOS/incident alerts
 - `landings` – catch landing submissions + verification state
-- `batches` and/or `fishBatches` – traceability records (buyer-safe view where applicable)
+- `fishBatches` – traceability records generated after landing verification
 - `batchPublicVerifications` – public read-only verification payloads
 - `notices` – operational bulletins
 - `auditLogs` – immutable audit trail
 - `analytics` – admin analytics documents
 
-> Note: naming in some typed model docs (`catchLandings`, `fishBatches`) and active security-rules/runtime collections (`landings`, `batches`, `fishBatches`) reflects ongoing iteration typical in project development.
+
+
+## Route protection matrix
+
+All routes are authenticated by default except `/login` and `/verify/:batchCode?`.
+
+- **fisherman**: `/trips`, `/trips/register`, `/trips/:tripId`, `/alerts`, `/landings`, `/landings/new`, `/landings/:landingId`, `/notices`, `/notices/:noticeId`
+- **harbor_officer**: fisherman operational reads plus `/batches`, `/batches/verify/:batchCode`, `/vessels`, `/vessels/:vesselId`, `/harbors`, `/harbors/:harborId`, `/officer/*`
+- **buyer**: `/batches`, `/batches/verify/:batchCode`, `/notices`, `/notices/:noticeId`
+- **admin**: all officer routes plus `/audit` and `/analytics`
+
+If a signed-in user has no resolved role profile, the app routes them to `/unauthorized` instead of rendering protected screens.
+
+## End-to-end workflow status
+
+Implemented and integrated workflows:
+- Trip registration and officer/admin status transitions.
+- Fisherman SOS alert submission and officer/admin resolution.
+- Landing intake submission, officer/admin verification, and fish batch generation.
+- Buyer-safe batch verification lookup (public and authenticated flows).
+- Notice publication, vessel/harbor management, and admin audit review.
+- Auth attempt auditing and role-scoped session profile retrieval.
 
 ## Cloud Functions overview
 

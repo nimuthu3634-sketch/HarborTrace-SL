@@ -202,20 +202,23 @@ const fishBatches = [
 
 const notices = [
   {
-    id: 'notice-weather-west', title: 'Southwest Monsoon Advisory: Western Waters',
-    body: 'A high-wind band is expected off Colombo and Negombo from 1800 hrs. Multi-day vessels should confirm bilge and communication checks before departure.',
+    id: 'notice-weather-west',
+    titleEn: 'Southwest Monsoon Advisory: Western Waters', titleSi: 'දකුණු-බටහිර මෝසම් උපදෙස්: බස්නාහිර ජල සීමාව', titleTa: 'தென்மேற்கு பருவமழை அறிவுரை: மேற்கு கடல் பகுதி', title: 'Southwest Monsoon Advisory: Western Waters',
+    bodyEn: 'A high-wind band is expected off Colombo and Negombo from 1800 hrs. Multi-day vessels should confirm bilge and communication checks before departure.', bodySi: 'කොළඹ සහ මීගමුව මුහුදට 1800 සිට දැඩි සුළං පටි කලාපයක් අපේක්ෂිතය. දින කිහිපයක ගමන් සඳහා පිටත් වීමට පෙර බිල්ජ් සහ සන්නිවේදන පරීක්ෂා තහවුරු කරන්න.', bodyTa: '1800 மணிக்குப் பிறகு கொழும்பு மற்றும் நீர்கொழும்பு கடற்பகுதியில் பலத்த காற்று எதிர்பார்க்கப்படுகிறது. பலநாள் பயணக் கப்பல்கள் புறப்படும் முன் பில்ஜ் மற்றும் தொடர்பு அமைப்புகளைச் சரிபார்க்க வேண்டும்.', body: 'A high-wind band is expected off Colombo and Negombo from 1800 hrs. Multi-day vessels should confirm bilge and communication checks before departure.',
     scope: 'harbor', harborId: 'harbor-colombo', targetRole: 'all', targetRoles: ['fisherman', 'harbor_officer', 'buyer', 'admin'],
     priority: 'urgent', status: 'published', publishedAt: ts(hoursAgo(2)), expiresAt: ts(hoursFromNow(20)), createdBy: 'officer-colombo', createdByUid: 'officer-colombo'
   },
   {
-    id: 'notice-verification-cutoff', title: 'Landing Verification Cutoff for Export Lots',
-    body: 'Verified landings intended for Friday export consolidation must be submitted by 14:00 hrs on Thursday to complete residue documentation.',
+    id: 'notice-verification-cutoff',
+    titleEn: 'Landing Verification Cutoff for Export Lots', titleSi: 'අපනයන ලොට් සඳහා ගොඩබෑම තහවුරු කිරීමේ අවසාන වේලාව', titleTa: 'ஏற்றுமதி தொகுதிகளுக்கான இறக்கை சரிபார்ப்பு நிறைவு நேரம்', title: 'Landing Verification Cutoff for Export Lots',
+    bodyEn: 'Verified landings intended for Friday export consolidation must be submitted by 14:00 hrs on Thursday to complete residue documentation.', bodySi: 'සිකුරාදා අපනයන සකස් කිරීම සඳහා වන තහවුරු කළ ගොඩබෑම් බ්‍රහස්පතින්දා 14:00 ට පෙර ඉදිරිපත් කළ යුතුය.', bodyTa: 'வெள்ளிக்கிழமை ஏற்றுமதி ஒருங்கிணைப்பிற்கான சரிபார்க்கப்பட்ட இறக்கைகள் வியாழக்கிழமை 14:00 மணிக்குள் சமர்ப்பிக்கப்பட வேண்டும்.', body: 'Verified landings intended for Friday export consolidation must be submitted by 14:00 hrs on Thursday to complete residue documentation.',
     scope: 'national', harborId: null, targetRole: 'buyer', targetRoles: ['buyer', 'admin'],
     priority: 'important', status: 'published', publishedAt: ts(hoursAgo(7)), expiresAt: ts(hoursFromNow(72)), createdBy: 'admin-senaratne', createdByUid: 'admin-senaratne'
   },
   {
-    id: 'notice-training', title: 'Harbor Officer Drill: Incident Escalation Workflow',
-    body: 'Quarterly response drill will run this Saturday at 09:30 hrs. Officers should test radio handover, alert acknowledgement, and audit entry completion steps.',
+    id: 'notice-training',
+    titleEn: 'Harbor Officer Drill: Incident Escalation Workflow', titleSi: 'වරාය නිලධාරී අභ්‍යාසය: සිදුවීම් උත්සන්න කිරීමේ ක්‍රියාපටිපාටිය', titleTa: 'துறைமுக அதிகாரி பயிற்சி: சம்பவ உயர்வு செயல்முறை', title: 'Harbor Officer Drill: Incident Escalation Workflow',
+    bodyEn: 'Quarterly response drill will run this Saturday at 09:30 hrs. Officers should test radio handover, alert acknowledgement, and audit entry completion steps.', bodySi: 'කාර්තුමය ප්‍රතිචාර අභ්‍යාසය මේ සෙනසුරාදා 09:30 ට පැවැත්වේ. නිලධාරීන් රේඩියෝ භාරදීම, අනතුරු ඇඟවීම් පිළිගැනීම සහ විගණන ඇතුළත් කිරීම පරීක්ෂා කළ යුතුය.', bodyTa: 'காலாண்டு பதில் பயிற்சி இந்த சனிக்கிழமை 09:30 மணிக்கு நடைபெறும். அதிகாரிகள் வானொலி ஒப்படைப்பு, எச்சரிக்கை ஒப்புதல் மற்றும் தணிக்கை பதிவு படிகளைச் சோதிக்க வேண்டும்.', body: 'Quarterly response drill will run this Saturday at 09:30 hrs. Officers should test radio handover, alert acknowledgement, and audit entry completion steps.',
     scope: 'national', harborId: null, targetRole: 'harbor_officer', targetRoles: ['harbor_officer', 'admin'],
     priority: 'normal', status: 'published', publishedAt: ts(hoursAgo(30)), expiresAt: ts(hoursFromNow(168)), createdBy: 'admin-senaratne', createdByUid: 'admin-senaratne'
   }

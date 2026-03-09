@@ -260,6 +260,13 @@ ul {
   border-radius: 12px;
 }
 
+.table-wrap th,
+.table-wrap td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+
 table {
   width: 100%;
   border-collapse: collapse;

@@ -10,7 +10,9 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import { useI18n } from '../i18n/I18nProvider';
 import { db } from '../lib/firebase';
+import { getLocalizedText } from '../lib/localizedNotice';
 import { formatTimestamp, resolveVoyageStatus, tripStatusClassName } from '../features/trips/tripStatus';
 
 const roleDescriptions = {
@@ -71,6 +73,7 @@ function MiniBarChart({ title, data, emptyMessage }) {
 
 export default function DashboardPage() {
   const { role, profile } = useAuth();
+  const { t, language } = useI18n();
   const [trips, setTrips] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [landings, setLandings] = useState([]);
@@ -408,7 +411,7 @@ export default function DashboardPage() {
             {recentNotices.map((notice) => (
               <li key={notice.id}>
                 <strong>
-                  <Link to={`/notices/${notice.id}`}>{notice.title || 'Untitled notice'}</Link>
+                  <Link to={`/notices/${notice.id}`}>{getLocalizedText(notice, 'title', language) || t('common.untitledNotice')}</Link>
                 </strong>
                 <span>{formatTimestamp(notice.createdAt)}</span>
               </li>
@@ -501,7 +504,7 @@ export default function DashboardPage() {
             {recentNotices.map((notice) => (
               <li key={notice.id}>
                 <strong>
-                  <Link to={`/notices/${notice.id}`}>{notice.title || 'Untitled notice'}</Link>
+                  <Link to={`/notices/${notice.id}`}>{getLocalizedText(notice, 'title', language) || t('common.untitledNotice')}</Link>
                 </strong>
                 <span>{formatTimestamp(notice.createdAt)}</span>
               </li>

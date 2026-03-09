@@ -1,6 +1,6 @@
 import { doc, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 import { db, functions } from '../lib/firebase';
@@ -14,6 +14,7 @@ export default function HarborDetailPage() {
   const canManageHarbor = role === 'admin';
   const [harbor, setHarbor] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [state, setState] = useState({ loading: false, error: '', success: '' });
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function HarborDetailPage() {
     }
 
     return onSnapshot(doc(db, 'harbors', harborId), (snapshot) => {
+      setHasLoaded(true);
       if (!snapshot.exists()) {
         setHarbor(null);
         setDraft(null);
@@ -38,19 +40,34 @@ export default function HarborDetailPage() {
     });
   }, [harborId]);
 
-  const detailRows = useMemo(() => {
-    if (!harbor) {
-      return [];
-    }
+  if (!harborId) {
+    return (
+      <section className="card">
+        <h2>Harbor Detail</h2>
+        <p>Missing harbor ID in route.</p>
+        <Link to="/harbors">Back to harbors</Link>
+      </section>
+    );
+  }
 
-    return [
+  if (!hasLoaded) {
+    return (
+      <section className="card">
+        <h2>Harbor Detail</h2>
+        <p>Loading harbor profile…</p>
+      </section>
+    );
+  }
+
+  const detailRows = harbor
+    ? [
       ['Name', harbor.name],
       ['District', harbor.district],
       ['Location Description', harbor.locationDescription],
       ['Created At', formatTimestamp(harbor.createdAt)],
       ['Updated At', formatTimestamp(harbor.updatedAt)]
-    ];
-  }, [harbor]);
+    ]
+    : [];
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -82,7 +99,7 @@ export default function HarborDetailPage() {
     return (
       <section className="card">
         <h2>Harbor Detail</h2>
-        <p>Harbor not found.</p>
+        <p>Harbor not found or you no longer have access.</p>
         <Link to="/harbors">Back to harbors</Link>
       </section>
     );

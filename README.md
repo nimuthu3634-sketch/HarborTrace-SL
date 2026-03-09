@@ -2,7 +2,7 @@
 
 HarborTrace SL is a **Firebase-powered fisheries operations and traceability platform** designed for Sri Lanka. It supports the full operational lifecycle from trip departure registration, active-voyage monitoring, and emergency alerting to landing verification and buyer-facing batch traceability.
 
-This repository is structured as a final-year university project monorepo, with a production-style architecture suitable for technical demonstrations.
+This repository is a **final-year university project monorepo** that follows a production-style architecture for technical demonstrations, supervision reviews, and portfolio presentation.
 
 ## Project overview
 
@@ -16,7 +16,7 @@ Fishing operations involve multiple actors (fishermen, harbor officers, buyers, 
 ### Project goal
 HarborTrace SL centralizes these workflows into a role-based digital platform with:
 - authenticated access,
-- secure Firestore data controls,
+- secure Firebase/Firestore data controls,
 - trusted backend workflows via Cloud Functions,
 - and auditable operations for governance.
 
@@ -110,6 +110,10 @@ HarborTrace SL uses a layered Firebase architecture:
 5. **Firebase Emulator Suite**
    - local Auth + Firestore + Functions integration,
    - rules testing and callable workflow testing.
+
+### Why Firebase was chosen
+
+Firebase was selected because it provides an integrated stack for authentication, serverless backend workflows, document storage, and local emulation. For a final-year project, this reduces infrastructure overhead while still allowing production-style security controls, role-based access patterns, and auditable workflows.
 
 ## Firestore collections
 
@@ -232,6 +236,12 @@ firebase login
 firebase use harbortrace-sl-dev
 ```
 
+If `harbortrace-sl-dev` is not available in your Firebase account, set your own project alias:
+
+```bash
+firebase use --add
+```
+
 ## Emulator setup steps
 
 ### 1) Build functions
@@ -254,6 +264,8 @@ This starts:
 ```bash
 npm run seed:demo
 ```
+
+> Run this while the emulator suite is running, so seed data is written to the local emulators (not to a live Firebase project).
 
 ## Environment variables
 
@@ -320,6 +332,8 @@ npm run test:functions:emulator
 npm run test:local
 ```
 
+> This command builds Functions, starts emulators in an isolated run, and executes rules + callable tests.
+
 ## Demo credentials
 
 After running `npm run seed:demo`, use the following accounts:
@@ -358,19 +372,15 @@ After running `npm run seed:demo`, use the following accounts:
 - Add stronger CI/CD quality gates (lint + tests + rules validation + deploy checks).
 - Expand end-to-end test automation (multi-role UI and cross-module workflows).
 - Integrate production-grade monitoring/alerting and error tracking.
-- Add multilingual UX support and accessibility refinements for broader field adoption.
+- Expand multilingual UX and accessibility refinements for broader field adoption.
 - Introduce richer analytics and predictive safety insights (e.g., risk forecasting).
 - Harden secure public traceability pages with anti-abuse controls and rate limiting.
 
 ---
 
-For architecture references, see:
-- `docs/architecture.md`
-- `docs/firebase-architecture.md`
-- `docs/firestore-data-model.md`
-
-
 ## Localization (en / si / ta)
+
+HarborTrace SL supports a multilingual user experience for Sri Lankan field operations, with interfaces and notices available in English, Sinhala, and Tamil.
 
 The `web/` application uses a React context-based i18n provider (`I18nProvider`) with resource files under `web/src/locales/`.
 
@@ -399,3 +409,10 @@ Notices now support multilingual fields in Firestore:
 - `bodyEn`, `bodySi`, `bodyTa`
 
 English values are mandatory and act as fallback. UI renderers select locale-specific fields first and fallback to English.
+
+---
+
+For architecture references, see:
+- `docs/architecture.md`
+- `docs/firebase-architecture.md`
+- `docs/firestore-data-model.md`

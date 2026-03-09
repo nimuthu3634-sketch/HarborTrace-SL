@@ -51,7 +51,8 @@ service cloud.firestore {
       }
 
       function userProfileSchemaValid() {
-        return hasOnlyKeys(['uid', 'role', 'displayName', 'phone', 'createdAt']);
+        return hasOnlyKeys(['uid', 'role', 'displayName', 'phone', 'createdAt', 'preferredLanguage'])
+          && (!(request.resource.data.preferredLanguage is string) || request.resource.data.preferredLanguage in ['en', 'si', 'ta']);
       }
 
       allow read: if signedIn() && (request.auth.uid == uid || isOfficer() || isAdmin());

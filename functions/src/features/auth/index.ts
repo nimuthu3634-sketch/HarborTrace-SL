@@ -25,7 +25,8 @@ export const getSessionProfile = onCall(async (request: CallableRequest) => {
     role: profile.role ?? null,
     displayName: profile.displayName ?? null,
     harborId: profile.harborId ?? profile.homeHarborId ?? null,
-    homeHarborId: profile.homeHarborId ?? null
+    homeHarborId: profile.homeHarborId ?? null,
+    preferredLanguage: profile.preferredLanguage ?? null
   };
 });
 

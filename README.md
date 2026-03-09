@@ -349,3 +349,34 @@ For architecture references, see:
 - `docs/architecture.md`
 - `docs/firebase-architecture.md`
 - `docs/firestore-data-model.md`
+
+
+## Localization (en / si / ta)
+
+The `web/` application uses a React context-based i18n provider (`I18nProvider`) with resource files under `web/src/locales/`.
+
+- **Supported locales**: `en`, `si`, `ta`
+- **Fallback locale**: `en`
+- **Language detection order**: localStorage (`harbortrace.locale`) then browser language
+- **Switcher UI**: login screen and app header
+- **Persisted preference**:
+  - localStorage key: `harbortrace.locale`
+  - Firestore user profile field: `users/{uid}.preferredLanguage` (`en|si|ta`)
+
+### Add a new translation key
+1. Add the key to `web/src/locales/en.json`.
+2. Add corresponding entries in `web/src/locales/si.json` and `web/src/locales/ta.json`.
+3. Use `useI18n()` and `t('your.key')` in UI components.
+
+### Add a new language
+1. Create `web/src/locales/<lang>.json`.
+2. Register it in `web/src/i18n/translations.js` resources + `SUPPORTED_LANGUAGES`.
+3. Add the option in `LanguageSwitcher`.
+4. If profile persistence is required, include the new code in Firestore rules validation.
+
+### Multilingual notices/content
+Notices now support multilingual fields in Firestore:
+- `titleEn`, `titleSi`, `titleTa`
+- `bodyEn`, `bodySi`, `bodyTa`
+
+English values are mandatory and act as fallback. UI renderers select locale-specific fields first and fallback to English.

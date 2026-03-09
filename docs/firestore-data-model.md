@@ -34,6 +34,7 @@ All collection names use `camelCase` and align with product language:
   createdByUid: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  preferredLanguage: 'en' | 'si' | 'ta' | null;
 }
 ```
 
@@ -158,6 +159,12 @@ All collection names use `camelCase` and align with product language:
 {
   title: string;
   body: string;
+  titleEn: string;
+  titleSi: string;
+  titleTa: string;
+  bodyEn: string;
+  bodySi: string;
+  bodyTa: string;
   harborId: string | null;
   status: 'draft' | 'published' | 'archived';
   priority: 'normal' | 'important' | 'urgent';

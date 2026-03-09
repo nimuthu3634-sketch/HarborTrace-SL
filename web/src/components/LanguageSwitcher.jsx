@@ -6,12 +6,13 @@ const LANGUAGE_OPTIONS = [
   { code: 'ta', label: 'த' }
 ];
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ className = '' }) {
   const { t, language, setLanguage } = useI18n();
+  const switcherClassName = ['language-switcher', className].filter(Boolean).join(' ');
 
   return (
-    <div className="language-switcher" role="group" aria-label={t('language')}>
-      <span className="language-switcher-icon" aria-hidden="true">
+    <div className={switcherClassName} role="group" aria-label={t('language')}>
+      <span className="language-switcher-icon" role="img" aria-label={t('language')}>
         <svg viewBox="0 0 24 24" focusable="false">
           <path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18m6.9 8h-3a13.6 13.6 0 0 0-1.3-5a7.1 7.1 0 0 1 4.3 5M12 5c.8 1 1.8 3.1 2.1 6H9.9c.3-2.9 1.3-5 2.1-6m-3.6 1A13.4 13.4 0 0 0 7.1 11h-3a7.1 7.1 0 0 1 4.3-5M4.1 13h3a13.6 13.6 0 0 0 1.3 5a7.1 7.1 0 0 1-4.3-5M12 19c-.8-1-1.8-3.1-2.1-6h4.2c-.3 2.9-1.3 5-2.1 6m2.6-1a13.4 13.4 0 0 0 1.3-5h3a7.1 7.1 0 0 1-4.3 5" />
         </svg>
@@ -24,8 +25,9 @@ export default function LanguageSwitcher() {
               key={code}
               type="button"
               className={`language-switcher-option${isActive ? ' is-active' : ''}`}
-              aria-label={`${t('language')} ${label}`}
+              aria-label={t(`languages.${code}`)}
               aria-pressed={isActive}
+              aria-current={isActive ? 'true' : undefined}
               onClick={() => setLanguage(code)}
             >
               {label}

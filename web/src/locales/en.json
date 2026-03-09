@@ -52,6 +52,7 @@
     "published": "Notice published.",
     "createFailed": "Failed to create notice.",
     "updateFailed": "Failed to update notice.",
+    "notFound": "Notice not found.",
     "viewOnly": "You can view notices targeted for your role.",
     "none": "No notices available for this role.",
     "updated": "Updated notice {{id}}.",

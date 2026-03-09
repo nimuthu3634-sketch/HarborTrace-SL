@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { db, functions } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
 import { formatTimestamp } from '../trips/tripStatus';
-import { getLocalizedText } from '../../lib/localizedNotice';
+import { getLocalizedRole, getLocalizedText } from '../../lib/localizedNotice';
 
 const createNoticeCallable = httpsCallable(functions, 'createNotice');
 const updateNoticeCallable = httpsCallable(functions, 'updateNotice');
@@ -92,7 +92,7 @@ export default function NoticesPanel() {
           <label>{t('notice.fields.body')} (SI)<textarea name="bodySi" rows={3} value={form.bodySi} onChange={onChange} /></label>
           <label>{t('notice.fields.body')} (TA)<textarea name="bodyTa" rows={3} value={form.bodyTa} onChange={onChange} /></label>
           <label>{t('common.severity')}<select name="severity" value={form.severity} onChange={onChange}>{severityOptions.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select></label>
-          <label>{t('notice.fields.targetRole')}<select name="targetRole" value={form.targetRole} onChange={onChange}>{roleOptions.map((roleName) => <option key={roleName} value={roleName}>{t(`roles.${roleName}`)}</option>)}</select></label>
+          <label>{t('notice.fields.targetRole')}<select name="targetRole" value={form.targetRole} onChange={onChange}>{roleOptions.map((roleName) => <option key={roleName} value={roleName}>{getLocalizedRole(roleName, t)}</option>)}</select></label>
           <button type="submit" disabled={state.loading}>{t('notice.publish')}</button>
         </form>
       )}
@@ -100,7 +100,7 @@ export default function NoticesPanel() {
       {state.error && <p className="error">{state.error}</p>}
       {state.success && <p>{state.success}</p>}
       <div className="table-wrap"><table><thead><tr><th>{t('notice.table.title')}</th><th>{t('notice.table.severity')}</th><th>{t('notice.table.audience')}</th><th>{t('notice.table.createdBy')}</th><th>{t('notice.table.createdAt')}</th><th>{t('notice.table.details')}</th>{canManage && <th>{t('notice.table.edit')}</th>}</tr></thead>
-        <tbody>{visibleNotices.map((notice) => { const draft = currentDraft(notice); return <tr key={notice.id}><td>{getLocalizedText(notice, 'title', language) || t('common.untitledNotice')}</td><td>{notice.severity || 'info'}</td><td>{t(`roles.${notice.targetRole || 'all'}`)}</td><td>{notice.createdByName || notice.createdBy || '—'}</td><td>{formatTimestamp(notice.createdAt, language)}</td><td><Link to={`/notices/${notice.id}`}>{t('common.open')}</Link></td>{canManage && <td><input value={draft.titleEn} onChange={(e)=>setEditField(notice.id,'titleEn',e.target.value)} /><button type="button" onClick={() => updateNotice(notice)} disabled={state.loading}>{t('common.save')}</button></td>}</tr>; })}
+        <tbody>{visibleNotices.map((notice) => { const draft = currentDraft(notice); return <tr key={notice.id}><td>{getLocalizedText(notice, 'title', language) || t('common.untitledNotice')}</td><td>{notice.severity || 'info'}</td><td>{getLocalizedRole(notice.targetRole, t)}</td><td>{notice.createdByName || notice.createdBy || '—'}</td><td>{formatTimestamp(notice.createdAt, language)}</td><td><Link to={`/notices/${notice.id}`}>{t('common.open')}</Link></td>{canManage && <td><input value={draft.titleEn} onChange={(e)=>setEditField(notice.id,'titleEn',e.target.value)} /><button type="button" onClick={() => updateNotice(notice)} disabled={state.loading}>{t('common.save')}</button></td>}</tr>; })}
           {!visibleNotices.length && <tr><td colSpan={canManage ? 7 : 6}>{t('notice.none')}</td></tr>}</tbody></table></div>
     </section>
   );

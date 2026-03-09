@@ -72,6 +72,19 @@ Cloud Functions are organized by domain:
 
 Each domain encapsulates callable endpoints and shared validation/audit utilities.
 
+## Project structure
+
+```text
+HarborTrace-SL/
+├─ web/                 # React frontend (role-based UI + i18n)
+├─ functions/           # Firebase Cloud Functions (TypeScript)
+├─ firebase/            # Emulator seeding and support scripts
+├─ tests/               # Security rules + emulator integration tests
+├─ docs/                # Architecture and data-model documentation
+├─ firestore.rules      # Firestore security policy
+└─ firebase.json        # Emulator and Firebase project config
+```
+
 ## Firebase architecture
 
 HarborTrace SL uses a layered Firebase architecture:
@@ -287,6 +300,11 @@ npm run build:web
 npm run test:web
 ```
 
+### Frontend lint check
+```bash
+npm run lint:web
+```
+
 ### Firestore rules tests
 ```bash
 npm run test:rules
@@ -332,6 +350,7 @@ After running `npm run seed:demo`, use the following accounts:
 - Current automated tests focus on representative flows (route guards, rules checks, key callable flows) rather than exhaustive end-to-end UI coverage.
 - Observability is basic (console/emulator-centric) and does not yet include production monitoring dashboards.
 - Fine-grained performance optimization (query tuning at scale, pagination strategy) is still in progress.
+- Frontend production bundle is currently a single large chunk and would benefit from route-level code splitting.
 
 ## Future improvements
 

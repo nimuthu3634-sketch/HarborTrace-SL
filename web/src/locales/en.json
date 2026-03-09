@@ -1,0 +1,61 @@
+{
+  "appName": "HarborTrace SL",
+  "platformTagline": "Maritime catch traceability platform",
+  "signedInAs": "Signed in as",
+  "genericUser": "User",
+  "signOut": "Sign out securely",
+  "language": "Language",
+  "languages": {"en": "English", "si": "සිංහල", "ta": "தமிழ்"},
+  "login": {
+    "title": "HarborTrace SL Access",
+    "subtitle": "Sign in with your institutional account to access secure fisheries workflows.",
+    "email": "Institutional Email",
+    "password": "Password",
+    "submit": "Enter fisheries control center",
+    "submitting": "Signing in...",
+    "error": "Unable to sign in. Check your credentials and verify your account role assignment."
+  },
+  "nav": {
+    "dashboard": "Operations Dashboard",
+    "voyages": "Active Voyage Log",
+    "alerts": "Incident Alerts",
+    "landingIntake": "Landing Intake",
+    "batches": "Batch Traceability",
+    "notices": "Harbor Notice",
+    "vessels": "Vessel Registry",
+    "harbors": "Harbor Directory",
+    "audit": "Compliance Audit",
+    "analytics": "Performance Insights",
+    "about": "About HarborTrace SL"
+  },
+  "roles": {"fisherman": "Fisherman", "harbor_officer": "Harbor Officer", "buyer": "Buyer", "admin": "Admin", "all": "All roles", "unassigned": "Unassigned"},
+  "common": {
+    "loading": "Loading...",
+    "createdAt": "Created at",
+    "createdBy": "Created by",
+    "severity": "Severity",
+    "audience": "Audience",
+    "backToNotices": "Back to notices",
+    "untitledNotice": "Untitled notice",
+    "noMessageBody": "No message body.",
+    "open": "Open",
+    "save": "Save",
+    "details": "Details",
+    "viewDetails": "View details",
+    "status": "Status",
+    "error": "Something went wrong"
+  },
+  "notice": {
+    "title": "Harbor notices",
+    "description": "Role-targeted bulletins for fishermen, buyers, officers, and admins.",
+    "publish": "Publish notice",
+    "published": "Notice published.",
+    "createFailed": "Failed to create notice.",
+    "updateFailed": "Failed to update notice.",
+    "viewOnly": "You can view notices targeted for your role.",
+    "none": "No notices available for this role.",
+    "updated": "Updated notice {{id}}.",
+    "fields": {"title": "Title", "body": "Body", "targetRole": "Target role"},
+    "table": {"title": "Title", "severity": "Severity", "audience": "Audience", "createdBy": "Created by", "createdAt": "Created at", "details": "Details", "edit": "Edit"}
+  }
+}

@@ -32,12 +32,12 @@ export function resolveVoyageStatus(trip, nowMs = Date.now()) {
   return rawStatus === 'overdue' ? 'overdue' : 'active';
 }
 
-export function formatTimestamp(value) {
+export function formatTimestamp(value, locale = localStorage.getItem('harbortrace.locale') || navigator.language || 'en') {
   const dateValue = toDate(value);
   if (!dateValue) {
     return '—';
   }
-  return dateValue.toLocaleString();
+  return dateValue.toLocaleString(locale);
 }
 
 export function tripStatusClassName(status) {

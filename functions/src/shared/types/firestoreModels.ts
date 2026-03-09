@@ -38,6 +38,7 @@ export interface UserDocument extends TimestampFields {
   homeHarborId: string | null;
   phoneNumber: string | null;
   createdByUid: string;
+  preferredLanguage?: 'en' | 'si' | 'ta' | null;
 }
 
 export interface VesselDocument extends TimestampFields {
@@ -129,6 +130,7 @@ export interface NoticeDocument extends TimestampFields {
   publishedAt: FirebaseFirestore.Timestamp | null;
   expiresAt: FirebaseFirestore.Timestamp | null;
   createdByUid: string;
+  preferredLanguage?: 'en' | 'si' | 'ta' | null;
 }
 
 export interface AuditLogDocument {

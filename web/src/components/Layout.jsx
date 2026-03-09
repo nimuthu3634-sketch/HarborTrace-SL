@@ -1,44 +1,48 @@
 import { NavLink } from 'react-router-dom';
+import { useI18n } from '../i18n/I18nProvider';
 import { useAuth } from '../features/auth/AuthContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const links = [
-  { to: '/', label: 'Operations Dashboard', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] },
-  { to: '/trips', label: 'Voyage Log', roles: ['fisherman', 'admin'] },
-  { to: '/alerts', label: 'Incident Alerts', roles: ['fisherman', 'harbor_officer', 'admin'] },
-  { to: '/landings', label: 'Landing Intake', roles: ['fisherman', 'harbor_officer', 'admin'] },
-  { to: '/batches', label: 'Catch Batches', roles: ['buyer', 'harbor_officer', 'admin'] },
-  { to: '/notices', label: 'Harbor Bulletins', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] },
-  { to: '/vessels', label: 'Fleet Registry', roles: ['harbor_officer', 'admin'] },
-  { to: '/harbors', label: 'Port Directory', roles: ['harbor_officer', 'admin'] },
-  { to: '/audit', label: 'Compliance Audit', roles: ['admin'] },
-  { to: '/analytics', label: 'Performance Insights', roles: ['admin'] },
-  { to: '/about', label: 'About HarborTrace SL', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] }
+  { to: '/', labelKey: 'nav.dashboard', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] },
+  { to: '/trips', labelKey: 'nav.voyages', roles: ['fisherman', 'admin'] },
+  { to: '/alerts', labelKey: 'nav.alerts', roles: ['fisherman', 'harbor_officer', 'admin'] },
+  { to: '/landings', labelKey: 'nav.landingIntake', roles: ['fisherman', 'harbor_officer', 'admin'] },
+  { to: '/batches', labelKey: 'nav.batches', roles: ['buyer', 'harbor_officer', 'admin'] },
+  { to: '/notices', labelKey: 'nav.notices', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] },
+  { to: '/vessels', labelKey: 'nav.vessels', roles: ['harbor_officer', 'admin'] },
+  { to: '/harbors', labelKey: 'nav.harbors', roles: ['harbor_officer', 'admin'] },
+  { to: '/audit', labelKey: 'nav.audit', roles: ['admin'] },
+  { to: '/analytics', labelKey: 'nav.analytics', roles: ['admin'] },
+  { to: '/about', labelKey: 'nav.about', roles: ['fisherman', 'harbor_officer', 'buyer', 'admin'] }
 ];
 
 export default function Layout({ children }) {
   const { role, signOut, profile } = useAuth();
+  const { t } = useI18n();
   const visibleLinks = links.filter((link) => !role || link.roles.includes(role));
-  const roleLabel = String(role || 'unassigned').replace('_', ' ');
+  const roleLabel = t(`roles.${String(role || 'unassigned')}`);
 
   return (
     <div className="layout">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Maritime catch traceability platform</p>
-          <h1>HarborTrace SL</h1>
+          <p className="eyebrow">{t('platformTagline')}</p>
+          <h1>{t('appName')}</h1>
         </div>
         <div className="header-meta">
+          <LanguageSwitcher />
           <p>
-            Signed in as <strong>{profile?.displayName || 'User'}</strong>
+            {t('signedInAs')} <strong>{profile?.displayName || t('genericUser')}</strong>
           </p>
           <span className="role-badge">{roleLabel}</span>
-          <button onClick={signOut}>Sign out securely</button>
+          <button onClick={signOut}>{t('signOut')}</button>
         </div>
       </header>
       <nav className="app-nav">
-        {visibleLinks.map(({ to, label }) => (
+        {visibleLinks.map(({ to, labelKey }) => (
           <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'active' : '')}>
-            {label}
+            {t(labelKey)}
           </NavLink>
         ))}
       </nav>

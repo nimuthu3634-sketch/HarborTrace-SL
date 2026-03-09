@@ -467,3 +467,7 @@ th {
 
   .landing-form { gap: .8rem; }
 }
+
+.language-switcher { display:flex; gap:0.4rem; align-items:center; margin-bottom:0.25rem; }
+.language-switcher select { min-width: 9rem; }
+
